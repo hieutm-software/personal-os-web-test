@@ -1,0 +1,174 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item"></div>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <div class="row justtify-content-start">
+                    <div class="col-sm-7" style="
+                            border: 1px solid #ddd;
+                            border-radius: 5px;
+                            float: right;
+                        ">
+                        <div class="row" style="padding: 10px 0">
+                            <div class="col-sm-5">
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "Tên nhân viên" | localize }}:
+                                        {{ employeeInfoData.fullName }}</label>
+                                </div>
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "Mã nhân viên" | localize }}:
+                                        {{
+                                        employeeInfoData.employeeCode
+                                        }}</label>
+                                </div>
+                            </div>
+                            <div class="col-sm-7">
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "Số phép năm" | localize }}
+                                        {{ lastYear }}:
+                                        {{
+                                        employeeAnnualLeaveData.annualLeaveLastYear
+                                        }}
+                                        (Sử dụng trong Quý I
+                                        {{ currentYear }})</label>
+                                </div>
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "Tống số phép năm" | localize }}
+                                        {{ currentYear }}:
+                                        {{
+                                        employeeAnnualLeaveData.numberOfAnnualLeave
+                                        }}</label>
+                                </div>
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "Số phép đã dùng" | localize }}:
+                                        {{
+                                        employeeAnnualLeaveData.daysUsed
+                                        }}</label>
+                                </div>
+                                <div>
+                                    <label class="dx-field-item-label-text">{{ "AnnualDayLeft" | localize }}:
+                                        {{
+                                        employeeAnnualLeaveData.daysLeft
+                                        }}</label>
+                                </div>
+                                <div>
+                                    <label class="dx-field-item-label-text">{{
+                                        "số phép đã dùng của năm nay"
+                                        | localize
+                                        }}:
+                                        {{
+                                        employeeAnnualLeaveData.annualLeaveThisYearUsed
+                                        }}</label>
+                                </div>
+                                <!-- <div>
+                                    <label class="dx-field-item-label-text">{{'Function' |localize}}:
+                                        {{employeeInfoData.functionName}}</label>
+                                </div>
+
+                                <div> <label class="dx-field-item-label-text">{{'Department' | localize}}:
+                                        {{employeeInfoData.departmentName}}</label></div> -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-5">
+                        <dx-button icon="refresh" style="float: right" (onClick)="refresh()">
+                        </dx-button>
+                        <button style="margin-right: 5px; float: right" (click)="fastApproval()"
+                            *ngIf="isGranted('Pages.LeaveRegistration.Approvel.LDPTCHC')" class="btn btn-primary">
+                            <i class="fa fa-plus"></i>
+                            {{ "Phê duyệt nhanh" | localize }}
+                        </button>
+                        <button style="margin-right: 5px; float: right" (click)="checkLeave()"
+                            *ngIf="isGranted('Pages.LeaveRegistration.Approvel.LDPTCHC')" class="btn btn-primary">
+                            <i class="fa fa-plus"></i>
+                            {{ "Kiểm tra đơn nghỉ chưa phê duyệt" | localize }}
+                        </button>
+                        <button style="margin-right: 5px; float: right" (click)="create()" *ngIf="
+                                isGranted(
+                                    'Pages.LeaveRegistration.LeaveApplication.Create'
+                                ) && !(this.isGranted('Pages.LeaveRegistration.Approvel.TGD'))
+                            " class="btn btn-primary">
+                            <i class="fa fa-plus"></i>
+                            {{ "Thêm mới" | localize }}
+                        </button>
+                        <button style="margin-right: 5px; float: right" (click)="search()" class="btn btn-primary">
+                            {{ "Lọc" | localize }}
+                        </button>
+                    </div>
+                </div>
+                    <!-- advanced filter here -->
+                    <filter-leave-application #filterBox style="margin: 15px 0px">
+                    </filter-leave-application>
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id"
+                        [columnAutoWidth]="true" [wordWrapEnabled]="true" [focusedRowEnabled]="true"
+                        (onToolbarPreparing)="onToolbarPreparing($event)" (onCellPrepared)="onCellPrepared($event)">
+                        <dxo-export [enabled]="true"></dxo-export>
+                        <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true">
+                        </dxo-pager>
+
+                        <dxo-editing class mode="popup" [allowUpdating]="allowUpdating" [allowDeleting]="allowDeleting"
+                            [allowUpdating]="allowUpdatingByUser" [allowAdding]="false">
+                            <dxo-texts confirmDeleteMessage="{{
+                                    'Bạn có chắc muốn xóa đơn nghỉ phép'
+                                        | localize
+                                }}" confirmDeleteTitle="{{
+                                    'Xóa đơn nghỉ phép' | localize
+                                }}"></dxo-texts>
+                        </dxo-editing>
+                        <dxi-column dataField="approvedDate" caption="{{ 'Ngày phê duyệt' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="censorId" caption="{{ 'Mã người phê duyệt' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="subscriberId" caption="{{ 'Mã người đăng ký' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column datafield="isHalfDayLeave" caption="{{ 'Nghỉ nửa ngày' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column datafield="applicationTypeId" caption="{{ 'LeaveApplicationTypeID' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="stt" caption="{{ 'STT' | localize }}" [visible]="true"
+                            alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="subcriberName" caption="{{ 'Người tạo đơn' | localize }}"
+                            [width]="15 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="departmentName" caption="{{ 'Đơn vị' | localize }}" [width]="8 + '%'"
+                            [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="creationTime" caption="{{ 'Ngày tạo' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="fromDate" caption="{{ 'Từ ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="toDate" caption="{{ 'Đến ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="numberOfDayOff" caption="{{ 'Tổng số ngày nghỉ' | localize }}"
+                            [width]="8 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="registrationReason" caption="{{ 'Lý do xin nghỉ' | localize }}"
+                            [width]="15 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="leaveApplicationTypeTitle" caption="{{ 'Hình thức nghỉ' | localize }}"
+                            [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="nameStatus" caption="{{ 'Trạng thái' | localize }}" [width]="10 + '%'"
+                            [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column type="buttons" caption="{{ 'Thao tác' | localize }}" [width]="10 + '%'">
+                            <dxi-button title="View" name="view" icon="fi flaticon-eye" [onClick]="onView"></dxi-button>
+                            <dxi-button title="Edit" name="edit" icon="edit" [onClick]="onEdit"></dxi-button>
+                            <dxi-button title="Delete" name="delete" icon="trash" [onClick]="onDelete"></dxi-button>
+                        </dxi-column>
+                    </dx-data-grid>
+                </div>
+            </div>
+        </div>
+    </div>
+    <app-leave-application-edit-popup
+        (onEditUnitsCompleted)="onEditCompleted($event)"></app-leave-application-edit-popup>
+</div>

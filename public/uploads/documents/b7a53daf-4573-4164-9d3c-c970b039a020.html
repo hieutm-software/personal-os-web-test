@@ -1,0 +1,558 @@
+<div [@routerTransition]>
+
+
+
+
+    <div class="kt-content">
+
+
+
+        <!------------------------------BEGIN: ICONS-------------------------------------------->
+        <div class="row">
+            <div class="col-md-3">
+                <a class="box_css" href="/app/document/in">
+                    <div class="col-css-4"><img src="../../../assets/common/images/icons/document.gif" class="icon_css">
+                    </div>
+                    <div class="col-css-8"><span class="txt_css"><a href="/app/document/in">Văn bản</a></span></div>
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a class="box_css" href="/app/task-management/task-list">
+                    <div class="col-css-4"><img src="../../../assets/common/images/icons/bar-chart.gif"
+                            class="icon_css"></div>
+                    <div class="col-css-8"><span class="txt_css">
+                            <a href="/app/task-management/task-list">Quản lý CV</a>
+                        </span></div>
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a class="box_css" href="/app/meeting-schedule-management/meeting-list">
+                    <div class="col-css-4"><img src="../../../assets/common/images/icons/calendar.gif" class="icon_css">
+                    </div>
+                    <div class="col-css-8"><span class="txt_css">
+                            <a href="/app/meeting-schedule-management/meeting-list">Lịch họp</a>
+                        </span></div>
+                </a>
+            </div>
+
+            <div class="col-md-3" (click)="onClickHDSD()">
+                <div class="box_css">
+                    <div class="col-css-4"><img src="../../../assets/common/images/icons/folders.gif" class="icon_css">
+                    </div>
+                    <div class="col-css-8"><span class="txt_css" style="color:#007ad9">Tài liệu HDSD</span></div>
+                </div>
+            </div>
+        </div>
+        <!------------------------------END: ICONS-------------------------------------------->
+
+        <div class="row">
+            <div class="col-md-9">
+                <!---Begin: BANNER--->
+                <div class="slideshow row banner_css">
+                    <dx-gallery #gallery id="gallery" [dataSource]="dataSource" [height]="35+'%'"
+                        [slideshowDelay]="slideshowDelay" [loop]="true" [showNavButtons]="false"
+                        [showIndicator]="false"></dx-gallery>
+                </div>
+                <!---END: BANNER--->
+                <!---Begin: SU KIEN AITS--->
+                <div class="row">
+                    <span class="head_new_css">Sự kiện AITS</span>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/hoiNghiNLD2026.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34086" target="_blank">
+                                HỘI NGHỊ ĐẠI BIỂU NGƯỜI LAO ĐỘNG NĂM 2026
+                            </a>
+                        </div>
+                        <div class="date_css">16.03.2026</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/sinhHoatDangBo.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34083" target="_blank">
+                                CHƯƠNG TRÌNH SINH HOẠT ĐẢNG BỘ CÔNG TY AITS
+                            </a>
+                        </div>
+                        <div class="date_css">24.10.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/phunucongso.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34082" target="_blank">
+                                PHỤ NỮ CÔNG SỞ - NÉT ĐẸP TỪ PHONG CÁCH ĐẾN TÂM HỒN
+                            </a>
+                        </div>
+                        <div class="date_css">20.10.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/vanhoaxanh.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34081" target="_blank">
+                                VĂN HÓA SỐ - VĂN HÓA XANH TẠI AITS: HÀNH TRÌNH LAN TỎA GIÁ TRỊ BỀN VỮNG
+                            </a>
+                        </div>
+                        <div class="date_css">26.09.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/daihoidoan.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34080" target="_blank">
+                                ĐẠI HỘI ĐOÀN TNCS HỒ CHÍ MINH CÔNG TY CỔ PHẦN TIN HỌC – VIỄN THÔNG HÀNG KHÔNG LẦN THỨ
+                                IV, NHIỆM KỲ 2025 – 2030 THÀNH CÔNG TỐT ĐẸP
+                            </a>
+                        </div>
+                        <div class="date_css">24.09.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/dangbo.png" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34077" target="_blank">
+                                Đảng bộ AITS về nguồn tại khu di tích lịch sử Ngã ba Đồng Lộc
+                            </a>
+                        </div>
+                        <div class="date_css">17.07.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/Anh 1-min.JPG" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34076" target="_blank">
+                                Đảng bộ Công ty cổ phần Tin học - Viễn thông Hàng không tổ chức thành công Đại hội lần
+                                thứ IV, nhiệm kỳ 2025 - 2030
+                            </a>
+                        </div>
+                        <div class="date_css">05.05.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/lams.jpeg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34073" target="_blank">
+                                NÂNG CẤP HỆ THỐNG LAMS - NÂNG CAO TRẢI NGHIỆM KHÁCH HÀNG VIETNAM AIRLINES
+                            </a>
+                        </div>
+                        <div class="date_css">28.02.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/new.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34072" target="_blank">
+                                CÔNG TY AITS TRIỂN KHAI HÀNH ĐỘNG THEO PHƯƠNG CHÂM NĂM 2025: KẾT NỐI TỰ HÀO – KỶ NGUYÊN
+                                SÁNG TẠO – ĐỘT PHÁ THÀNH CÔNG
+                            </a>
+                        </div>
+                        <div class="date_css">06.01.2025</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/hoiThao.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34065" target="_blank">
+                                AITS VÔ ĐỊCH TRONG MỌI MẶT TRẬN ĐEM LẠI VINH QUANG CHO “NƯỚC NHÀ”
+                            </a>
+                        </div>
+                        <div class="date_css">04.11.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/Thanh niên AITS.png" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34062" target="_blank">
+                                Thanh niên AITS xung kích – Đoàn kết kiến tạo tương lai
+                            </a>
+                        </div>
+                        <div class="date_css">10.10.2024</div>
+                    </div>
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/782024.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34058" target="_blank">
+                                TĂNG, PHÁT, HOẠT: NHIỆM VỤ CỦA NHÀ QUẢN LÝ CHUYÊN NGHIỆP
+                            </a>
+                        </div>
+                        <div class="date_css">07.08.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/LietSi.jpeg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34057" target="_blank">
+                                Công ty AITS: ĐỜI ĐỜI NHỚ ƠN CÁC ANH HÙNG LIỆT SĨ
+                            </a>
+                        </div>
+                        <div class="date_css">29.07.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/KhongNgungPhucvu.jpeg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34056" target="_blank">
+                                AITS: KHÔNG NGỪNG CẬP NHẬT KIẾN THỨC MỚI ĐỂ PHỤC VỤ KHÁCH HÀNG
+                            </a>
+                        </div>
+                        <div class="date_css">25.07.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/HoiNghiNLD.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34055" target="_blank">
+                                HỘI NGHỊ ĐẠI BIỂU NGƯỜI LAO ĐỘNG AITS: KHẲNG ĐỊNH GIÁ TRỊ CỦA NGƯỜI LAO ĐỘNG
+                            </a>
+                        </div>
+                        <div class="date_css">21.06.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/ChungChiISO.JPG" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34054" target="_blank">
+                                AITS TỔ CHỨC LỄ ĐÓN NHẬN CHỨNG CHỈ QUỐC TẾ ISO 9001:2015 VÀ ISO 27001:2022
+                            </a>
+                        </div>
+                        <div class="date_css">21.06.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/TetThieuNhi.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34053" target="_blank">
+                                CHƯƠNG TRÌNH VUI TẾT THIẾU NHI 1/6 TẠI AITS
+                            </a>
+                        </div>
+                        <div class="date_css">03.06.2024</div>
+                    </div>
+
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/Daihoicodong.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34052" target="_blank">
+                                ĐẠI HỘI ĐỒNG CỔ ĐÔNG THƯỜNG NIÊN NĂM 2024
+                            </a>
+                        </div>
+                        <div class="date_css">21.05.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/HÀNH TRÌNH TRI ÂN – THIÊNG LIÊNG LỄ CHÀO CỜ TẠI CỘT CỜ QUỐC GIA LŨNG CÚ TẠI HÀ GIANG.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34043" target="_blank">
+                                HÀNH TRÌNH TRI ÂN – THIÊNG LIÊNG LỄ CHÀO CỜ TẠI CỘT CỜ QUỐC GIA LŨNG CÚ TẠI HÀ GIANG
+                            </a>
+                        </div>
+                        <div class="date_css">12.04.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/HÀNH TRÌNH TRI ÂN – NGHĨA TRANG LIỆT SỸ QUỐC GIA VỊ XUYÊN, HÀ GIANG 2024.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34042" target="_blank">
+                                HÀNH TRÌNH TRI ÂN – NGHĨA TRANG LIỆT SỸ QUỐC GIA VỊ XUYÊN, HÀ GIANG 2024
+                            </a>
+                        </div>
+                        <div class="date_css">12.04.2024</div>
+                    </div>
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/8-3.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34041" target="_blank">
+                                HỘI NGHỊ “VÌ SỰ TIẾN BỘ PHỤ NỮ” CHÀO MỪNG KỶ NIỆM 114 NĂM NGÀY QUỐC TẾ PHỤ NỮ
+                                (08/03/1910 - 08/03/2024)
+                            </a>
+                        </div>
+                        <div class="date_css">11.03.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/[2010] NIỀM TỰ HÀO HƠN 30 NĂM GẮN BÓ VỚI LĨNH VỰC XỬ LÝ DỮ LIỆU.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34038" target="_blank">
+                                [20/10] NIỀM TỰ HÀO HƠN 30 NĂM GẮN BÓ VỚI LĨNH VỰC XỬ LÝ DỮ LIỆU
+                            </a>
+                        </div>
+                        <div class="date_css">08.01.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/Hai quần chúng ưu tú công ty aits tự hào được đứng vào hàng ngũ của Đảng.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34036" target="_blank">
+                                Hai quần chúng ưu tú công ty aits tự hào được đứng vào hàng ngũ của Đảng
+                            </a>
+                        </div>
+                        <div class="date_css">08.01.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/PTGĐ Đặng Anh Tuấn giữ chức vụ Chủ tịch HĐQT Công ty AITS.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34039" target="_blank">
+                                PTGĐ Đặng Anh Tuấn giữ chức vụ Chủ tịch HĐQT Công ty AITS
+                            </a>
+                        </div>
+                        <div class="date_css">24.01.2024</div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/Chương trình kỉ niệm 15 năm thành lập Công ty Ý NGHĨA, CẢM XÚC VÀ TRÀN ĐẦY TỰ HÀO.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a href="https://aits.vn/news/139/34040" target="_blank">
+                                Chương trình kỉ niệm 15 năm thành lập Công ty: Ý NGHĨA, CẢM XÚC VÀ TRÀN ĐẦY TỰ HÀO
+                            </a>
+                        </div>
+                        <div class="date_css">29.01.2024</div>
+                    </div>
+                </div>
+                <!---End: SU KIEN AITS--->
+                <!---Begin: TIN TUYEN DUNG--->
+                <div class="row">
+                    <span class="head_new_css">Tin tuyển dụng</span>
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/tuyen-dung-cong-nghe-aits.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a target="_blank" rel="noopener noreferrer"
+                                href="https://career.aits.vn/vieclamnoibat">Khối Vận hành khai thác</a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/tuyen-dung-kinh-doanh-aits.jpg"
+                                class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a target="_blank" rel="noopener noreferrer"
+                                href="https://career.aits.vn/vieclamnoibat">Khối Kinh doanh - Phát triển sản phẩm</a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/tuyen-dung-van-phong.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a target="_blank" rel="noopener noreferrer"
+                                href="https://career.aits.vn/vieclamnoibat">Khối Văn phòng hỗ trợ</a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 news_css">
+                        <div class="img_css">
+                            <img src="../../../assets/common/images/news/tuyen-dung-xldl-aits.jpg" class="img_news_css">
+                        </div>
+                        <div class="title_css">
+                            <a target="_blank" rel="noopener noreferrer"
+                                href="https://career.aits.vn/vieclamnoibat">Khối Xử lý dữ liệu</a>
+                        </div>
+                    </div>
+                </div>
+                <!---End: TIN TUYEN DUNG--->
+            </div>
+            <div class="col-md-3">
+                <!------------------------------BEGIN: LICH BIEU -------------------------------------------->
+                <div class="container">
+
+                    <div class="calendar-container">
+
+                        <header>
+                            <div class="month">Lịch của tôi</div>
+                        </header>
+
+                        <div class="calendar-container">
+                            <dx-calendar #calendar [(value)]="currentValue" [min]="minDateValue" [max]="maxDateValue"
+                                [disabledDates]="disabledDates" [disabled]="false" [firstDayOfWeek]="0"
+                                [zoomLevel]="zoomLevels[0]" [cellTemplate]="cellTemplate" weekNumberRule="auto">
+                                <span *dxTemplate="let cell of 'custom'; let i = index"
+                                    [ngClass]="getCellCssClass(cell)"
+                                    [style.font-style]="i == 0 || i == 6 ? 'italic' : 'normal'">
+                                    {{ cell.text }}
+                                </span>
+                            </dx-calendar>
+                        </div>
+
+                    </div> <!-- end calendar-container -->
+
+                </div> <!-- end container -->
+                <!------------------------------END: LICH BIEU -------------------------------------------->
+                <div>
+                    <a class="mailbox_css" href="/app/category/mail-box">
+                        <div class="col-css-4"><img style="width: 40px;"
+                                src="../../../assets/common/images/icons/document.gif">
+                        </div>
+                        <div><span class="mailtxt_css"><a style="color: #FECD5E; font-size: 14px;"
+                                    href="/app/category/mail-box">Hòm thư góp ý</a></span></div>
+                    </a>
+                </div>
+                <!---Begin: GHI CHU CUA TOI--->
+                <div class="row bg_note_css">
+                    <div class="box_css_note box_right_css">
+                        <div class="col-md-12">
+                            <span class="head_new_css title_note_css">Ghi chú của tôi</span>
+                        </div>
+                        <div class="col-md-12">
+                            <span class="button_css">Thêm 1 ghi chú <b>+</b></span>
+                        </div>
+
+
+                        <div class="col-md-12 node_css" style="background-color: #ff5269; text-align: center;"
+                            *ngIf="HPBDVisible">
+                            <!-- <button (click)="onClickCreate()">
+                                {{ 'CHÚC MỪNG SINH NHẬT' | localize }}
+                            </button> -->
+                            <div (click)="onClickHPBD()">
+                                <div>
+                                    <div><span class="button_css" style="color:#f5ff63; border:none;">CHÚC MỪNG SINH
+                                            NHẬT</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 node_css" style="background-color: #ff5269; text-align: center;"
+                            *ngIf="HPBDListVisible">
+                            <div (click)="onClickHPBDList()">
+                                <div>
+                                    <div><span class="button_css" style="color:#f5ff63; border:none;">DANH SÁCH SINH
+                                            NHẬT HÔM NAY</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 node_css">
+                            <span class="note_title_css">Kiểm tra tài liệu FSD</span>
+                            <span class="note_content_css">Ngày 10/11/2022, kiểm tra tài liệu FSD do BA viết</span>
+                        </div>
+
+                        <div class="col-md-12 node_css">
+                            <span class="note_title_css">Trao đổi dự án A-Office</span>
+                            <span class="note_content_css">Trao đổi dự án A-Office do PTGĐ Bùi Tuấn Anh chủ trì (14h
+                                10/11/2022 - Phòng họp HCM)</span>
+                        </div>
+
+                        <div class="col-md-12 node_css">
+                            <span class="note_title_css">Tham gia khóa đào tạo</span>
+                            <span class="note_content_css">Tham gia khóa đào tạo về Nghiệp vụ hàng không khối Kỹ thuật -
+                                Khai thác do Mr. Hảo (DVPM) giảng dạy</span>
+                        </div>
+                    </div>
+                </div>
+                <!---END: GHI CHU CUA TOI--->
+            </div>
+        </div>
+    </div>
+
+    <ng-template #ideaTemplate>
+        <ng-container *ngFor="let item of ideas">
+            <div class="grid-item" (click)="onViewSubmission(item.id, $event)">
+                <img src="{{ backendURL + item.representImage }}" alt="" class="grid-item__img" />
+                <div class="grid-item__info">
+                    <div class="grid-item__name">{{ item.ideaName }}</div>
+                    <div class="grid-item_description">{{ item.brief }}</div>
+                </div>
+                <div class="grid-item__authors">
+                    <div class="grid-item__authors-name">
+                        {{ item.contactName }}
+                    </div>
+                    <div class="grid-item__authors-time">
+                        {{ item.ideaDate.format("MM/DD/YYYY") }}
+                    </div>
+                </div>
+                <div class="grid-item__unit">
+                    <div class="grid-item__unit-name">{{ item.unitCode }}</div>
+                    <div class="grid-item__unit-touchpoint">
+                        {{ item.touchPointName }}
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+    </ng-template>
+</div>
+
+<!-- <dx-popup [width]="1500" [height]="700" [showTitle]="true" title="{{ 'ViewIdeaDetail' | localize }}"
+    [dragEnabled]="true" [showCloseButton]="true" [visible]="viewDetailPopupVisible" (onHidden)="onHidden($event)">
+    <view-deployment-idea-detail></view-deployment-idea-detail>
+</dx-popup> -->
+
+<dx-popup [width]="900" [height]="650" [showTitle]="true" titleTemplate="title" [dragEnabled]="true"
+    [closeOnOutsideClick]="false" [showCloseButton]="false" [(visible)]="popupVisible">
+    <div *dxTemplate="let data of 'title'">
+        <dx-button icon="close" (onClick)="cancelEditButtonClick()" style="position:absolute;right:5px"></dx-button>
+    </div>
+    <happy-birthday (onEditUnitsCompleted)="cancelEditButtonClick()"></happy-birthday>
+</dx-popup>
+
+<dx-popup [width]="800" [height]="510" [showTitle]="true" titleTemplate="title" [dragEnabled]="true"
+    [closeOnOutsideClick]="false" [showCloseButton]="false" [(visible)]="popupListVisible">
+    <div *dxTemplate="let data of 'title'">
+        <dx-button icon="close" (onClick)="cancelListButtonClick()" style="position:absolute;right:5px"></dx-button>
+    </div>
+    <app-list-birthday></app-list-birthday>
+</dx-popup>

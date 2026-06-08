@@ -1,0 +1,69 @@
+<dx-popup [width]="50 + '%'" [height]="88 + '%'" [showTitle]="true" titleTemplate="title" [dragEnabled]="true"
+    [closeOnOutsideClick]="false" [showCloseButton]="false" [(visible)]="popupVisible">
+    <div *dxTemplate="let data of 'title'">
+        <h3>{{titlePopup}}<dx-button icon="close" (onClick)="popupVisible = false" style="position:absolute;right:5px">
+            </dx-button>
+        </h3>
+    </div>
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="saveButtonOptions"
+        [visible]="!readOnly">
+    </dxi-toolbar-item>
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="cancelEditButtonOptions"
+        [visible]="!readOnly">
+    </dxi-toolbar-item>
+    <dx-scroll-view id="scrollview" [scrollByContent]="true" [scrollByThumb]="true" showScrollbar="onScroll"
+        [bounceEnabled]="false" reachBottomText="Updating...">
+        <dx-form #categoryForm labelLocation="top" [(formData)]="leaveApplicationReasonData"
+            [showValidationSummary]="true">
+            <!-- <dxi-item editorType="dxSelectBox" [colSpan]="1"
+        [editorOptions]="{disabled:readOnly, placeholder:'Lựa chọn', dataSource:dataLeaveTypeCodes,
+        displayExpr:'text', valueExpr:'value', value:approvalRoleCodeValue, onValueChanged:onValueChangedApprovalRoleCodes}">
+        <dxi-validation-rule type="required" message="Trường bắt buộc">
+        </dxi-validation-rule>
+        <dxo-label text="Mã loại chấm công"></dxo-label>
+      </dxi-item> -->
+            <dxi-item itemType="group" caption="Thông tin chung">
+                <dxi-item dataField="title" [colSpan]="2" editorType="dxTextBox"
+                    [editorOptions]="{disabled:readOnly,maxLength:100 }">
+                    <dxi-validation-rule type="required" message="Lý do xin nghỉ là trường bắt buộc"></dxi-validation-rule>
+                    <dxo-label text="{{ 'Lý do xin nghỉ' | localize }}"></dxo-label>
+                </dxi-item>
+                <dxi-item dataField="applicationTypeId" [colSpan]="2" editorType="dxSelectBox" [editorOptions]="{
+                    dataSource:dataLeaveTypes,
+                    onValueChanged:onValueChangedLeaveTypes,
+                    displayExpr:'displayText',valueExpr:'value',value:leaveTypeValue, readOnly:readOnly, searchEnabled: true
+                }">
+                    <dxi-validation-rule type="required"
+                        message="Trường hình thức nghỉ là trường bắt buộc"></dxi-validation-rule>
+                    <dxo-label text="{{ 'Hình thức nghỉ' | localize }}"></dxo-label>
+                </dxi-item>
+                <dxi-item dataField="description" [colSpan]="2" editorType="dxTextArea"
+                    [editorOptions]="{ height: 140, disabled:readOnly, maxLength:5000 }">
+                    <dxo-label text="{{ 'Ghi chú' | localize }}"></dxo-label>
+                </dxi-item>
+            </dxi-item>
+
+            <dxi-item itemType="group" caption="Kết quả" [colCount]="2">
+
+                <dxi-item itemType="group" [colCount]="1">
+                    <dxi-item editorType="dxCheckBox" dataField="nghiDungHan" [colSpan]="1" [editorOptions]="{readOnly:readOnly}">
+                        <dxo-label text="{{ 'Xin nghỉ đúng hạn' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item editorType="dxCheckBox" dataField="nghiQuahan" [colSpan]="1" [editorOptions]="{readOnly:readOnly}">
+                        <dxo-label text="{{ 'Xin nghỉ quá hạn' | localize }}"></dxo-label>
+                    </dxi-item>
+                </dxi-item>
+                <dxi-item editorType="dxSelectBox" [colCount]="1" [editorOptions]="{
+                    dataSource:dataStatuses,
+                    onValueChanged:onValueChangedStatus,
+                    displayExpr:'text',valueExpr:'value',value:statusValue, readOnly:readOnly
+                }">
+                    <dxi-validation-rule type="required" message="Trường trạng thái là bắt buộc"></dxi-validation-rule>
+                    <dxo-label text="{{ 'Trạng thái' | localize }}"></dxo-label>
+                </dxi-item>
+
+            </dxi-item>
+        </dx-form>
+    </dx-scroll-view>
+</dx-popup>

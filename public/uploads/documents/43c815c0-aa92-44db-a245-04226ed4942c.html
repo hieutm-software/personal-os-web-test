@@ -1,0 +1,59 @@
+<div [@routerTransition]>
+    
+    <dx-data-grid #dataGrid [dataSource]="dataSource" keyExpr="id" [showBorders]="true"
+        [columnAutoWidth]="true" [wordWrapEnabled]="true">
+
+        <dxo-paging [enabled]="false" [pageSize]="15"></dxo-paging>
+        <dxo-pager [showPageSizeSelector]="false" [allowedPageSizes]="[15, 20, 30]" [showInfo]="true"  [visible]="true">
+        </dxo-pager>
+        <dxo-scrolling mode="virtual" rowRenderingMode="virtual">
+        </dxo-scrolling>
+
+        <dxo-editing mode="popup" [allowUpdating]="true" [allowDeleting]="false" [allowAdding]="false">
+        </dxo-editing>
+
+        <dxi-column dataField="id" caption="{{ 'Id' | localize }}" [visible]="false">
+        </dxi-column>
+        <dxi-column cssClass="header-center text-center" dataField="order"
+            caption="{{ 'STT' | localize }}" [visible]="true" [width]="40">
+        </dxi-column>
+        <dxi-column cssClass="header-center" dataField="fullName" caption="{{ 'Tên' | localize }}"
+            [width]="30 +'%'">
+        </dxi-column>
+        <dxi-column cssClass="header-center" dataField="departmentName" caption="{{ 'Phòng ban' | localize }}"
+            [width]="30 +'%'">
+        </dxi-column>
+        <dxi-column cssClass="header-center" type="buttons" caption="{{ 'Gửi lời chúc' | localize }}"
+            [width]="15 +'%'">               
+            <dxi-button name="edit" icon="edit" [onClick]="onEdit"></dxi-button>
+        </dxi-column>
+    </dx-data-grid>
+
+
+
+    <dx-popup [visible]="listVisible" [showTitle]="true" title="Gửi lời chúc" [width]="400" [height]="400" [dragEnabled]="true" [closeOnOutsideClick]="false" [showCloseButton]="false">
+        <dx-button icon="close" (onClick)="cancelClick()" style="position:absolute; right:5px; top:5px;"></dx-button>
+
+        <dx-form #categoryForm labelLocation="top" [(formData)]="detailData" [showValidationSummary]="true">
+            <dxi-item dataField="content" editorType="dxTextArea"
+                [editorOptions]="{ height: 140, maxLength:5000 }">
+                <dxi-validation-rule type="stringLength" [max]="2000" message="Không được nhập quá 2000 ký tự">
+                </dxi-validation-rule>
+                <dxo-label text="{{ 'Nội dung' | localize }}"></dxo-label>
+            </dxi-item>
+        </dx-form>
+        <button style="display: block;
+                margin-left: auto;
+                margin-right: auto;
+                margin-bottom: auto;
+                margin-top: 20px;
+                border-radius: 5px;
+                background-color: #ffc01c;
+                color: #007b9cc2;
+                font-weight: bold;
+                width: 140px;
+                padding: 4px;
+                border-color: transparent;" (click)="listChosen()">Gửi</button>   
+        </dx-popup>
+            
+</div>

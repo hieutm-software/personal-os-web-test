@@ -1,0 +1,83 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item">
+        <div class="kt-đơn nghỉ phépsubheader__main">
+        </div>
+        <div class="kt-subheader__toolbar">
+            <div class="kt-subheader__wrapper">
+            </div>
+        </div>
+    </div>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <app-toolbar [isAllowCreate]="isGranted('Pages.LeaveRegistration.LeaveApplicationConfig.Create')"
+                    (onSearch)="search($event)" (onCreate)="createLeaveApplicationConfig()">
+                </app-toolbar>
+
+                <!-- <dx-data-grid #dataGrid class="grid" keyExpr="id" [dataSource]="dataSource" [remoteOperations]="true" [height]="88 + '%'" [width]="100 + '%'" [showBorders]="true" [columnAutoWidth]="true" [wordWrapEnabled]="true" [showColumnLines]="false" [showRowLines]="true"
+                [rowAlternationEnabled]="true" [focusedRowEnabled]="true" [focusedRowIndex]="0" [allowColumnResizing]="false" [columnHidingEnabled]="true" columnResizingMode="widget" dateSerializationFormat="yyyy-MM-ddTHH:mm:ss" > -->
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id"
+                        [columnAutoWidth]="true" [wordWrapEnabled]="true"
+                        [focusedRowEnabled]="true" (onCellPrepared)="onCellPrepared($event)">
+
+                        <!-- <dxo-scrolling columnRenderingMode="virtual"></dxo-scrolling> -->
+                        <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true">
+                        </dxo-pager>
+                        <!-- <dxo-scrolling mode="virtual"></dxo-scrolling> -->
+
+                        <dxo-editing mode="popup" [allowUpdating]="allowUpdating" [allowDeleting]="allowDeleting"
+                            [allowAdding]="false">
+                            <dxo-texts confirmDeleteMessage="{{
+                                    'Bạn có chắc muốn xóa cấu hình nghỉ phép này không' | localize
+                                }}" confirmDeleteTitle="{{ 'Xóa cấu hình nghỉ phép này không' | localize }}"></dxo-texts>
+                        </dxo-editing>
+                        <dxi-column dataField="id" caption="{{ 'Id' | localize }}" [width]="5+'%'" [visible]="false">
+                        </dxi-column>
+                        <dxi-column dataField="STT" [allowSorting]="false" caption="{{ 'STT' | localize }}" [width]="5+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="title" caption="{{ 'Tiêu đề' | localize }}" [width]="20+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="roleId" caption="{{ 'Nhóm quyền' | localize }}" [width]="20+'%'">
+                            
+                        </dxi-column>
+                        <dxi-column dataField="type" caption="{{ 'Hình thức' | localize }}" [width]="20+'%'">
+                            <dxo-lookup [dataSource]="lstTypes" valueExpr="value" displayExpr="text">
+                            </dxo-lookup>
+                        </dxi-column>
+                        <dxi-column dataField="approvalLockPeriod" caption="{{ 'Thời gian khóa phê duyệt(phút)' | localize }}" [width]="15+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="approvalWarningPeriod" caption="{{ 'Thời gian cảnh báo(phút)' | localize }}" [width]="15+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="warningPeriodString" caption="{{ 'Thời điểm cảnh báo' | localize }}" [width]="25+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="isActive" caption="{{ 'Trạng thái' | localize }}" [width]="15+'%'">
+                            <dxo-lookup [dataSource]="lstStatuses" valueExpr="value" displayExpr="text">
+                            </dxo-lookup>
+                        </dxi-column>
+                        <dxi-column dataField="description" caption="{{ 'Ghi chú' | localize }}" [width]="25+'%'">
+                        </dxi-column>
+                        
+                        <dxi-column type="buttons" caption="{{ 'Thao tác' | localize }}">
+                            <dxi-button name="review" icon="fi flaticon-eye" [onClick]="onViewLeaveApplicationConfig">
+                            </dxi-button>
+                            <dxi-button name="edit" icon="edit" [onClick]="onEditLeaveApplicationConfig"></dxi-button>
+                            <dxi-button name="delete" icon="trash" [onClick]="onDelete"></dxi-button>
+                        </dxi-column>
+                        <!-- <dxo-export [enabled]="false"></dxo-export> -->
+                    </dx-data-grid>
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+
+    <leave-application-config-edit-popup (onEditUnitsCompleted)="onEditCompleted($event)">
+    </leave-application-config-edit-popup>
+
+</div>

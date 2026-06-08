@@ -1,0 +1,101 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item">
+        <div class="kt-subheader__main">
+            <button icon="back" (click)="onClickBack()" class="btn btn-primary btn-upper"
+                style="background-color: #f6bb35; border: 1px solid #f6bb35">
+                {{ "Về danh sách" | localize }}
+            </button>
+        </div>
+    </div>
+    
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <div class="row">
+                    <!-- advanced filter here -->
+                    <filter-leave-application #filterBox style="margin: 15px 0; width: 100%;">
+                    </filter-leave-application>
+                </div>
+                <div class="row justtify-content-start">
+                    <div class="w-100">
+                        <dx-button icon="refresh" style="float: right" (onClick)="refresh()">
+                        </dx-button>
+                        <button style="margin-right: 5px; float: right" (click)="onApproval()"
+                            *ngIf="isGranted('Pages.LeaveRegistration.Approvel.LDPTCHC')" class="btn btn-danger">
+                            <i class="fa fa-check"></i>
+                            {{ "Từ chối" | localize }}
+                        </button>
+                        <button style="margin-right: 5px; float: right" (click)="onApproval()"
+                            *ngIf="isGranted('Pages.LeaveRegistration.Approvel.LDPTCHC')" class="btn btn-success">
+                            <i class="fa fa-check"></i>
+                            {{ "Phê duyệt" | localize }}
+                        </button>
+                        <button style="margin-right: 5px; float: right" (click)="search()" class="btn btn-primary">
+                            {{ "Lọc" | localize }}
+                        </button>
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id"
+                        [columnAutoWidth]="true" [wordWrapEnabled]="true" [focusedRowEnabled]="true" noDataText="{{'Không có đơn nghỉ nào cần phê duyệt'| localize}}"
+                        (onToolbarPreparing)="onToolbarPreparing($event)" (onCellPrepared)="onCellPrepared($event)" (onSelectionChanged)="selectionChanged($event)">
+                        <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true">
+                        </dxo-pager>
+                        <dxo-selection [selectAllMode]="allMode" [showCheckBoxesMode]="checkBoxesMode"
+                            mode="multiple"></dxo-selection>
+                        <dxi-column dataField="approvedDate" caption="{{ 'Ngày phê duyệt' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="censorId" caption="{{ 'Mã người phê duyệt' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="subscriberId" caption="{{ 'Mã người đăng ký' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column datafield="isHalfDayLeave" caption="{{ 'Nghỉ nửa ngày' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column datafield="applicationTypeId" caption="{{ 'LeaveApplicationTypeID' | localize }}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="stt" caption="{{ 'STT' | localize }}" [visible]="true"
+                            alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="subcriberName" caption="{{ 'Người tạo đơn' | localize }}"
+                            [width]="15 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="departmentName" caption="{{ 'Đơn vị' | localize }}" [width]="8 + '%'"
+                            [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="creationTime" caption="{{ 'Ngày tạo' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="fromDate" caption="{{ 'Từ ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="toDate" caption="{{ 'Đến ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="numberOfDayOff" caption="{{ 'Tổng số ngày nghỉ' | localize }}"
+                            [width]="8 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="registrationReason" caption="{{ 'Lý do xin nghỉ' | localize }}"
+                            [width]="15 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="leaveApplicationTypeTitle" caption="{{ 'Hình thức nghỉ' | localize }}"
+                            [width]="10 + '%'" [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="status" caption="{{ 'Trạng thái' | localize }}" [width]="10 + '%'"
+                            [allowSorting]="false" alignment="center">
+                        </dxi-column>
+                    </dx-data-grid>
+                </div>
+            </div>
+        </div>
+    </div>
+    <app-leave-application-edit-popup
+        (onEditUnitsCompleted)="onEditCompleted($event)"></app-leave-application-edit-popup>
+    <!-- <app-create-or-update-document-in #createOrEditDocumentInModal (onEditDocumentCompleted)="getAll()"></app-create-or-update-document-in> -->
+</div>
+<dx-load-panel #loadPanel shadingColor="rgba(0,0,0,0.4)" [position]="{ of: '#dataGrid' }"
+    [(visible)]="loadingVisible" [showIndicator]="true" [showPane]="true" [shading]="true"
+    message="Vui lòng đợi trong giây lát...">
+</dx-load-panel>

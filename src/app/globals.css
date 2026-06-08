@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+@theme {
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIGHT THEME — Polished slate/blue, Office 365-inspired
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Backgrounds */
+    --background: #f8fafc;
+    --foreground: #0f172a;
+
+    /* Cards — elevated clean white */
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+
+    /* Popover */
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+
+    /* Primary — Modern crisp blue */
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+
+    /* Secondary — soft zinc */
+    --secondary: #e2e8f0;
+    --secondary-foreground: #0f172a;
+
+    /* Muted */
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+
+    /* Accent */
+    --accent: #e2e8f0;
+    --accent-foreground: #0f172a;
+
+    /* Destructive */
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Borders & Inputs */
+    --border: #cbd5e1;
+    --input: #cbd5e1;
+    --ring: #2563eb;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Premium tokens */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #cbd5e1;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(203, 213, 225, 0.6);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --elevated-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --gradient-surface: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
+    --gradient-banner: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────────────
+     DARK THEME — Deep navy, Office 365 dark mode-inspired
+     ───────────────────────────────────────────────────────────────────────────── */
+  .dark {
+    /* Backgrounds */
+    --background: #0d1117;
+    --foreground: #e6edf3;
+
+    /* Cards — elevated charcoal surface */
+    --card: #161b22;
+    --card-foreground: #e6edf3;
+
+    /* Popover */
+    --popover: #1c2128;
+    --popover-foreground: #e6edf3;
+
+    /* Primary — vivid blue accent on dark */
+    --primary: #388bfd;
+    --primary-foreground: #ffffff;
+
+    /* Secondary */
+    --secondary: #21262d;
+    --secondary-foreground: #c9d1d9;
+
+    /* Muted */
+    --muted: #1c2128;
+    --muted-foreground: #8b949e;
+
+    /* Accent */
+    --accent: #1f3a5f;
+    --accent-foreground: #79b8ff;
+
+    /* Destructive */
+    --destructive: #f85149;
+    --destructive-foreground: #ffffff;
+
+    /* Borders & Inputs */
+    --border: #30363d;
+    --input: #21262d;
+    --ring: #388bfd;
+
+    /* Premium tokens */
+    --sidebar-bg: #13161b;
+    --sidebar-border: #21262d;
+    --glass-bg: rgba(22, 27, 34, 0.80);
+    --glass-border: rgba(56, 139, 253, 0.15);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.40), 0 1px 4px rgba(0, 0, 0, 0.20);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.20), 0 4px 16px rgba(0, 0, 0, 0.15);
+    --elevated-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.25);
+    --gradient-primary: linear-gradient(135deg, #388bfd 0%, #58a6ff 100%);
+    --gradient-surface: linear-gradient(160deg, #161b22 0%, #0d1117 100%);
+    --gradient-banner: linear-gradient(135deg, #0d1f3a 0%, #1f3a5f 50%, #1a2a4a 100%);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE STYLES
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PREMIUM GLOBAL FORM CONTROLS — Select & Date Pickers
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px rgba(var(--ring), 0.15), var(--card-shadow);
+  }
+
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
+
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    color-scheme: light dark;
+  }
+
+  input[type="date"]:focus,
+  input[type="datetime-local"]:focus,
+  input[type="time"]:focus {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+  }
+
+  input[type="color"] {
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    transition: box-shadow 0.15s ease;
+  }
+
+  input[type="color"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PREMIUM UTILITY CLASSES
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Glassmorphism surface */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Elevated card */
+  .card-elevated {
+    box-shadow: var(--elevated-shadow);
+  }
+
+  /* Premium card base */
+  .premium-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--card-shadow);
+    border-radius: var(--radius);
+  }
+
+  /* Sidebar glass effect */
+  .sidebar-glass {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+  }
+}

@@ -1,0 +1,133 @@
+<dx-popup [width]="90 + '%'" [showTitle]="true" titleTemplate="title" [dragEnabled]="true" [closeOnOutsideClick]="false"
+    [showCloseButton]="false" [(visible)]="popupVisible">
+    <div *dxTemplate="let data of 'title'">
+        <h3>{{ titlePopup }}
+            <!-- <dx-button icon="close" (onClick)="popupVisible = false" style="position: absolute; right: 5px">
+            </dx-button> -->
+        </h3>
+    </div>
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="saveButtonOptions"
+        [visible]="!readOnly">
+    </dxi-toolbar-item>
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="cancelEditButtonOptions">
+    </dxi-toolbar-item>
+    <dx-scroll-view id="scrollview" [scrollByContent]="true" [scrollByThumb]="true" showScrollbar="onScroll"
+        [bounceEnabled]="false" reachBottomText="Updating...">
+        <dx-form id="form" #dcmForm [formData]="leaveApprovalAuthorizationData">
+            <dxi-item itemType="group" caption="Thông tin chung">
+                <dxi-item itemType="group" [colSpan]="1">
+                    <dxi-item dataField="number" title="{{ 'Số văn bản' | localize }}" editorType="dxTextBox"
+                        [editorOptions]="{ readOnly: readOnly }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Số văn bản' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                        dataSource: dataUser,
+                        showClearButton: true,
+                        searchEnabled: true,
+                        displayExpr: 'displayText',
+                        valueExpr: 'value',
+                        onValueChanged: onValueChangedAuthorizer,
+                        value: authorizerValue,
+                        readOnly: readOnly
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Bên ủy quyền' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                        dataSource: dataUser,
+                        showClearButton: true,
+                        searchEnabled: true,
+                        displayExpr: 'displayText',
+                        valueExpr: 'value',
+                        onValueChanged: onValueChangedAuthorizedPerson,
+                        value: authorizedPersonValue,
+                        readOnly: readOnly
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Bên nhận ủy quyền' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <!-- <dxi-item dataField="authorizedPersonName" editorType="dxTextBox" [editorOptions]="{ }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Bên nhận ủy quyền' | localize }}"></dxo-label>
+                    </dxi-item> -->
+                    <dxi-item dataField="valideFromDate" editorType="dxDateBox" [editorOptions]="{ width: '100%', displayFormat:'dd/MM/yyyy',
+                        readOnly: readOnly}">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Hiệu lực từ ngày' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item dataField="valideToDate" editorType="dxDateBox" [editorOptions]="{ width: '100%', displayFormat:'dd/MM/yyyy',
+                        readOnly: readOnly}">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Hiệu lực đến ngày' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item title="{{ 'Nội dung giải trình' | localize }}" editorType="dxTextArea" dataField="content"
+                        [editorOptions]="{
+                            placeholder:'Nhập nội dung ủy quyền',
+                            readOnly: readOnly,
+                            height: 100, 
+                            maxLength:5000
+                        }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Nội dung ủy quyền' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                        dataSource: dataStatuses,
+                        showClearButton: true,
+                        searchEnabled: true,
+                        displayExpr: 'text',
+                        valueExpr: 'value',
+                        onValueChanged: onValueChangedStatus,
+                        value: statusValue,
+                        readOnly: readOnly
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Bên ủy quyền' | localize }}"></dxo-label>
+                    </dxi-item>
+                </dxi-item>
+
+
+                <dxi-item>
+                    <p-fileUpload *ngIf="isView" customUpload="true" name="excelFileUpload" #excelFileUpload
+                        maxFileSize="50000000" accept=".pdf,.doc,.docx"
+                        multiple="multiple" auto="true" (onSelect)="uploadFile($event)" (onError)="onUploadExcelError()"
+                        (onRemove)="onRemoveFile($event)" chooseLabel="{{'Chọn file' | localize}}">
+                    </p-fileUpload>
+                    <dx-list #listFiles *ngIf="fileListDto.length > 0" [dataSource]="fileListDto"
+                        [activeStateEnabled]="false" [noDataText]="''">
+                        <div *dxTemplate="let item of 'item'">
+                            <div>
+                                {{ item.fileName }}
+                                <dx-button *ngIf="!readOnly" stylingMode="contained" style="float:right" type="alert"
+                                    icon="remove" (onClick)="removeFile(item)" hint="Xóa file">
+                                </dx-button>
+                                <dx-button stylingMode="contained" style="float:right" type="default" icon="download"
+                                    hint="Tải về" (onClick)="buttonDownload(item)">
+                                </dx-button>
+                                <dx-button stylingMode="contained" icon="info" type="success" style="float:right"
+                                    hint="Xem trước" (onClick)="openPreview(item.filePath)">
+                                </dx-button>
+
+                            </div>
+                        </div>
+                    </dx-list>
+                    <div *ngIf="hasFile">
+                        <p>Không có file đính kèm</p>
+                    </div>
+                    <dx-text-box [visible]="false" [readOnly]="true" [hoverStateEnabled]="false"
+                        [(value)]="fileLists"></dx-text-box>
+                    <dxo-label text="{{ 'File đính kèm' | localize }}"></dxo-label>
+                </dxi-item>
+            </dxi-item>
+        </dx-form>
+        <app-preview-file></app-preview-file>
+    </dx-scroll-view>
+</dx-popup>

@@ -1,0 +1,39 @@
+<!-- <dx-popup #reportViewerPopup [width]="1200" [height]="100+'%'" [showTitle]="false" [resizeEnabled]="false"
+  title="{{'ReportViewer'|localize}}" [dragEnabled]="true" [closeOnOutsideClick]="false" [showCloseButton]="true"
+  [(visible)]="reportViewerVisible" (onContentReady)="onContentReady($event)">
+  <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="printButtonOptions">
+  </dxi-toolbar-item>
+  <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="closeButtonOptions">
+  </dxi-toolbar-item> -->
+  <div bsModal #reportViewerPopup="bs-modal" class="modal fade" tabindex="-1" role="dialog"
+  aria-labelledby="reportViewerPopup" aria-hidden="true" [config]="{backdrop: 'static'}">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <!-- <div class="modal-header">
+          <button type="button" class="close" (click)="close()" [attr.aria-label]="l('Close')">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div> -->
+      <div class="modal-body">
+        <dx-report-viewer [reportUrl]="reportUrl" [height]="(screenHeight-125)+'px'">
+          <dxrv-request-options [invokeAction]="invokeAction" [host]="hostUrl">
+          </dxrv-request-options>
+          <dxrv-tabpanel-settings width="500" position="Left"></dxrv-tabpanel-settings>
+          <dxrv-callbacks (CustomizeElements)="onCustomizeElements($event)" (BeforeRender)="onBeforeRender($event)">
+          </dxrv-callbacks>
+          <!--<dxrv-export-settings [showPrintNotificationDialog]="false" [useSameTab]="true">
+          </dxrv-export-settings>-->
+        </dx-report-viewer>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="printButtonClick()"><i class="fa fa-print"></i>
+          <span>{{"Print" | localize}}</span></button>
+        <button type="button" class="btn btn-default" (click)="close()"><i
+            class="fa fa-window-close"></i><span>{{"Close" |
+            localize}}</span></button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- </dx-popup> -->

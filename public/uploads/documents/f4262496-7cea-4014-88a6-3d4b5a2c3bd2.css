@@ -1,0 +1,12 @@
+.text-center {
+    text-align: center;
+}
+
+::ng-deep .dx-datagrid-headers .header-center {
+    text-align: center !important;
+}
+
+.container1 {
+    width: fit-content;
+    margin: 5px 5px 5px auto;
+}

@@ -1,0 +1,113 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item">
+    </div>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <div class="row justtify-content-start">
+                    <div class="col-sm-7" style="border: 1px solid #ddd; border-radius:5px; float:right; padding:10px;">
+                        <div>
+                            <label class="dx-field-item-label-text">{{'Tổng đơn xin nghỉ' | localize}}:
+                                {{totalleaveApplication}}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{'Tổng đơn đã được phê duyệt' | localize}}:
+                                {{totalApprovedleaveApplication}}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text" style="color: red;">
+                                {{'Tổng đơn không được phê duyệt' | localize}}:
+                                {{totalDeclinedleaveApplication}}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{'Tổng đơn chưa được phê duyệt' | localize}}:
+                                {{totalNotApproveleaveApplication}}</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-5">
+                        <dx-button icon="refresh" style="margin-right: 5px; float: right;" (onClick)="refresh()">
+                        </dx-button>
+                        <button style="margin-right: 5px; float: right;" (click)="search()" class="btn btn-primary">
+                            {{ "Lọc" | localize }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <filter-leave-application #filterBox style="margin: 15px 0;">
+                    </filter-leave-application>
+                </div>
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id"
+                        [columnAutoWidth]="true" [wordWrapEnabled]="true" [focusedRowEnabled]="true"
+                        (onToolbarPreparing)="onToolbarPreparing($event)">
+
+                        <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true">
+                        </dxo-pager>
+
+                        <dxi-column datafield="isHalfDayLeave" caption="{{'Nghỉ nửa ngày' | localize}}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column datafield="applicationTypeId" caption="{{'LeaveApplicationTypeID' | localize}}"
+                            [visible]="false"></dxi-column>
+                        <dxi-column dataField="stt" caption="{{ 'STT' | localize }}" [width]="5+'%'">
+                        </dxi-column>
+                        <dxi-column dataField="subcriberName" caption="{{ 'Người tạo đơn' | localize }}"
+                            [width]="15+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="departmentName" caption="{{ 'Đơn vị' | localize }}" [width]="8+'%'"
+                            [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="fromDate" caption="{{ 'Từ ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="toDate" caption="{{ 'Đến ngày' | localize }}" dataType="date"
+                            format="dd/MM/yyyy" [width]="10+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="numberOfDayOff" caption="{{ 'Tổng số ngày nghỉ' | localize }}"
+                            [width]="8+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="registrationReason" caption="{{ 'Lý do xin nghỉ' | localize }}"
+                            [width]="15+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="leaveApplicationTypeTitle" caption="{{ 'Hình thức nghỉ' | localize }}"
+                            [width]="15+'%'" [allowSorting]="false">
+                        </dxi-column>
+                        <dxi-column dataField="status" caption="{{ 'Trạng thái' | localize }}" [width]="10+'%'"
+                            [allowSorting]="false">
+                        </dxi-column>
+                        <!-- <dxi-column type="buttons" caption="{{ 'Thao tác' | localize }}" [width]="10+'%'">
+                            <dxi-button title="View" name="view" icon="fi flaticon-eye" [visible]="isNotHalfDayOff"
+                                [onClick]="onView"></dxi-button>
+                            <dxi-button title="ViewNuaPhep" name="viewNuaPhep" icon="fi flaticon-eye"
+                                [visible]="isHalfDayOff" [onClick]="onViewNuaPhep"></dxi-button>
+                            <dxi-button title="Edit" name="edit" icon="edit" [onClick]="onEdit"></dxi-button>
+                            <dxi-button title="Delete" name="delete" icon="trash" [onClick]="onDelete"></dxi-button>
+                        </dxi-column> -->
+                        <dxo-export [enabled]="false"></dxo-export>
+                    </dx-data-grid>
+                </div>
+                <br>
+                <!-- <dx-chart id="chart" title="Báo cáo đơn nghỉ" [dataSource]="dataSourceReport">
+                    <dxi-series valueField="seri1" name="Tổng đơn nghỉ" type="bar" color="#ffaa66">
+                    </dxi-series>
+                    <dxi-series valueField="seri2" name="Đơn đã được phê duyệt" type="bar" color="#4c6684">
+                    </dxi-series>
+                    <dxi-series valueField="seri3" name="Đơn không được phê duyệt" type="bar" color="#4c6683">
+                    </dxi-series>
+                    <dxi-series valueField="seri4" name="Đơn chưa được phê duyệt" type="bar" color="#4c6682">
+                    </dxi-series>
+                    <dxo-common-series-settings argumentField="departmentName" type="stackedBar">
+                        <dxo-label [visible]="false" [format]="{
+                                type: 'fixedPoint',
+                                precision: '0'
+                            }">
+                        </dxo-label>
+                    </dxo-common-series-settings>
+                </dx-chart> -->
+            </div>
+        </div>
+    </div>
+</div>

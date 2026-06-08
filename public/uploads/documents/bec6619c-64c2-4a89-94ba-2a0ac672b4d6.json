@@ -1,0 +1,118 @@
+{
+  // ==========================================
+  // 1. UI & PERFORMANCE OPTIMIZATION
+  // ==========================================
+  "workbench.colorTheme": "Tokyo Night Storm",
+  "editor.semanticHighlighting.enabled": true,
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.startupEditor": "none",
+  "telemetry.telemetryLevel": "off",
+  "explorer.compactFolders": false,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    "*.ts": "${capture}.js, ${capture}.d.ts.map",
+    ".env": ".env.*"
+  },
+
+  // ==========================================
+  // 2. EDITOR CORE CONFIGURATION
+  // ==========================================
+"editor.fontFamily": "'JetBrains Mono', Consolas, 'Courier New', monospace",
+  "editor.fontSize": 16,
+  "editor.fontLigatures": true,
+  "editor.wordWrap": "on",
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.linkedEditing": true,
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+  "files.trimTrailingWhitespace": true,
+
+  // ==========================================
+  // 3. FORMATTER SETTINGS (PRETTIER)
+  // ==========================================
+  "[json][jsonc][html][css][scss][javascript][javascriptreact][typescript][typescriptreact][vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false,
+    "editor.wordWrap": "bounded"
+  },
+
+  // ==========================================
+  // 4. CODE QUALITY & AUTO IMPORTS
+  // ==========================================
+"editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll.eslint": "explicit"
+  },
+  "js/ts.suggest.autoImports": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // ==========================================
+  // 5. HTML, JSX & EMMET CONFIG
+  // ==========================================
+  "html.autoClosingTags": true,
+  "js/ts.autoClosingTags.enabled": true,
+  "js/ts.preferences.renameMatchingJsxTags": true,
+  "emmet.includeLanguages": {
+    "vue-html": "html",
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact",
+    "markdown": "html"
+  },
+
+  // ==========================================
+  // 6. VISUAL GUIDES & APPEARANCE
+  // ==========================================
+  "editor.guides.bracketPairs": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.highlightActiveIndentation": true,
+  "editor.guides.bracketPairsHorizontal": "active",
+  "editor.tokenColorCustomizations": {
+    "comments": {
+      "fontStyle": "italic",
+      "foreground": "#6A737D"
+    }
+  },
+
+  // ==========================================
+  // 7. TAILWIND CSS OPTIMIZATION
+  // ==========================================
+"editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.experimental.classRegex": [
+    "tw`([^`]*)",
+    "tw=\"([^\"]*)",
+    "tw={\"([^\"}]*)",
+    "tw\\.\\w+`([^`]*)",
+    "tw\\(.*?\\)`([^`]*)"
+  ],
+
+  // ==========================================
+  // 8. TYPESCRIPT INLAY HINTS
+  // ==========================================
+  "js/ts.inlayHints.parameterNames.enabled": "all",
+  "js/ts.inlayHints.variableTypes.enabled": true,
+  "js/ts.inlayHints.functionLikeReturnTypes.enabled": true,
+  "js/ts.inlayHints.propertyDeclarationTypes.enabled": true,
+
+  // ==========================================
+  // 9. TERMINAL & SHELL CONFIGURATION
+  // ==========================================
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+  "terminal.integrated.profiles.windows": {
+    "Git Bash": {
+      "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+      "icon": "terminal-bash"
+    }
+  }
+}

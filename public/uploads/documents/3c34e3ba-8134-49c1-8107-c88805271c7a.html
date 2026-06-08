@@ -1,0 +1,83 @@
+<dx-popup [width]="600" [height]="isDeclineOrRevoke? 450 : 350" [showTitle]="false" [dragEnabled]="true"
+    [closeOnOutsideClick]="false" [showCloseButton]="false" [(visible)]="popupVisible">
+
+    <!-- <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Revoke') && isMatchActionButton()===6"
+        location="after" [options]="revokeButtonOptions">
+    </dxi-toolbar-item>
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Decline') && isMatchActionButton()===7"
+        location="after" [options]="declineEditButtonOptions">
+    </dxi-toolbar-item>
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Review') && isMatchActionButton()===2"
+        location="after" [options]="reviewButtonOptions">
+    </dxi-toolbar-item>
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Examine') && isMatchActionButton()===3"
+        location="after" [options]="examineButtonOptions">
+    </dxi-toolbar-item>
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Pass') && isMatchActionButton()===4" location="after"
+        [options]="passButtonOptions">
+    </dxi-toolbar-item> -->
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="acceptButtonOptions">
+    </dxi-toolbar-item>
+
+    <!-- <dxi-toolbar-item widget="dxButton" toolbar="bottom"
+        *ngIf="isGranted('Pages.LeaveRegistration.LeaveApplication.Approve') && isMatchActionButton()===5"
+        location="after" [options]="approveButtonOptions">
+    </dxi-toolbar-item> -->
+
+    <dxi-toolbar-item widget="dxButton" toolbar="bottom" location="after" [options]="cancelEditButtonOptions">
+    </dxi-toolbar-item>
+
+    <dx-scroll-view id="scrollview" [scrollByContent]="true" [scrollByThumb]="true" showScrollbar="onScroll"
+        [bounceEnabled]="false" reachBottomText="Updating...">
+        <dx-form #leaveApplicationForm labelLocation="top">
+            <dxi-item itemType="group">
+                <!-- <dxi-item [colSpan]="2">
+                    <label class="dx-field-item-label-text" *ngIf="isMatchActionButton()!==7">{{ 'Ký xác nhận' |
+                        localize
+                        }}</label>
+                </dxi-item> -->
+
+                <dxi-item [colSpan]="2" editorType="dxTextArea"
+                    [editorOptions]="{value:reasonContent, onValueChanged:onValueChangedReasonContent, maxLength:'2000'}">
+                    <!-- <dxi-validation-rule type="required" message="Hãy nhập lý do cho hành động này"></dxi-validation-rule> -->
+                    <dxo-label text="{{ 'Ý kiến' | localize }}"></dxo-label>
+                </dxi-item>
+
+                <!-- <dxi-item itemtype="simple" [visible]="isDeclineOrRevoke">
+                    <label class="dx-field-item-label-text">{{ 'Censor' | localize
+                        }} <span style="color:red">*</span></label></dxi-item> -->
+                <dxi-item [colSpan]="2" itemType="" editorType="dxSelectBox" [visible]="isDeclineOrRevoke"
+                    [editorOptions]="{dataSource: dataCensor,placeholder:'Lựa chọn', displayExpr:'displayText', 
+                        valueExpr:'value', value:censorValue, onValueChanged:onValueChangedCensor, showClearButton:'true', searchEnabled:'true'}">
+                    <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                    </dxi-validation-rule>
+                    <dxo-label text="{{ 'Người phê duyệt cấp kế' | localize }} "></dxo-label>
+                </dxi-item>
+                <!-- 
+                <dxi-item [visible]="visibleWarning">
+                    <div style="color: red; font-weight: bold; font-style: italic;">   
+                        <label class="textwarning">{{textWarning}}</label>
+                    </div>
+                </dxi-item> -->
+
+                <dxi-item [visible]="visibleWarning">
+                    <div style="color: red; font-weight: bold; font-style: italic; line-height: 1.6;">
+                        <div style="white-space: pre-line;">{{ textWarning }}</div>
+                    </div>
+                </dxi-item>
+
+                <!-- </div> -->
+            </dxi-item>
+        </dx-form>
+    </dx-scroll-view>
+</dx-popup>

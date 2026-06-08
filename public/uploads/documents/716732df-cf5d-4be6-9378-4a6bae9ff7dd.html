@@ -1,0 +1,76 @@
+<dx-form labelLocation="top" [(formData)]="filterCriteria">
+    <dxi-item itemType="group" [colCount]="8">
+        <dxi-item [colSpan]="2"
+            editorType="dxSelectBox"
+            [editorOptions]="{
+                dataSource: dataApplicationType,
+                showClearButton: true,
+                searchEnabled: true,
+                displayExpr: 'displayText',
+                valueExpr: 'value',
+                onValueChanged: onValueChangedApplicationType,
+                value: filterCriteria?.leaveApplicationTypeId
+            }"
+        >
+            <dxo-label text="{{ 'Hình thức nghỉ' | localize }}"></dxo-label>
+        </dxi-item>
+        <dxi-item [colSpan]="2"
+            editorType="dxSelectBox"
+            [editorOptions]="{
+                dataSource: dataUser,
+                showClearButton: true,
+                searchEnabled: true,
+                displayExpr: 'displayText',
+                valueExpr: 'value',
+                onValueChanged: onValueChangedUser,
+                value: filterCriteria?.userId
+            }"
+        >
+            <dxo-label text="{{ 'SubcriberName' | localize }}"></dxo-label>
+        </dxi-item>
+        <dxi-item [colSpan]="1"
+            dataField="fromDate"
+            editorType="dxDateBox"
+            [editorOptions]="{
+                value: filterCriteria?.fromDate,
+                width: '100%',
+                displayFormat: 'dd/MM/yyyy',
+                showClearButton: true
+            }"
+        >
+            <dxo-label text="{{ 'FromDate' | localize }}"></dxo-label>
+        </dxi-item>
+        <dxi-item [colSpan]="1"
+            dataField="toDate"
+            editorType="dxDateBox"
+            [editorOptions]="{
+                value: filterCriteria?.toDate,
+                width: '100%',
+                displayFormat: 'dd/MM/yyyy',
+                showClearButton: true
+            }"
+        >
+            <dxo-label text="{{ 'ToDate' | localize }}"></dxo-label>
+        </dxi-item>
+        <!-- <dxi-item editorType="dxSelectBox" [editorOptions]="{dataSource:dataDepartment, showClearButton:true, searchEnabled:true,
+            displayExpr:'displayText', valueExpr:'value',onValueChanged:onValueChangedDepartment, value:filterCriteria?.departmenId}">
+            <dxo-label text="{{ 'Department' | localize }}"></dxo-label>
+        </dxi-item> -->
+        <dxi-item [colSpan]="2"
+            editorType="dxTagBox"
+            [editorOptions]="{
+                dataSource: dataDepartment,
+                placeholder: 'Lựa chọn',
+                displayExpr: 'displayText',
+                valueExpr: 'value',
+                value: departmentValue,
+                onValueChanged: onValueChangedDepartment,
+                showClearButton: true,
+                searchEnabled: true,
+                showSelectionControls: true
+            }"
+        >
+            <dxo-label text="{{ 'Department' | localize }}"></dxo-label>
+        </dxi-item>
+    </dxi-item>
+</dx-form>

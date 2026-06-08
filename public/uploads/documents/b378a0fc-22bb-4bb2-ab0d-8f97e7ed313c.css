@@ -1,0 +1,6 @@
+::ng-deep .dx-overlay {
+    z-index: 20000;
+}
+::ng-deep .swal2-container {
+    z-index: 20000;
+}

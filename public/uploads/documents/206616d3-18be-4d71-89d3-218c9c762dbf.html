@@ -1,0 +1,28 @@
+
+
+
+<dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id" [columnAutoWidth]="true"
+    [wordWrapEnabled]="true" [focusedRowEnabled]="true">
+    <dxo-sorting mode="none"></dxo-sorting>
+    <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+    <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]" [showInfo]="true">
+    </dxo-pager>
+    <dxo-editing mode="popup" [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false">
+    </dxo-editing>
+
+    <dxi-column dataField="id" sortOrder="desc" caption="{{ 'Id' | localize }}" [visible]="false">
+    </dxi-column>
+    <dxi-column dataField="approverName" caption="{{ 'Người phê duyệt' | localize }}" width="200">
+    </dxi-column>
+    <dxi-column dataField="approvedDate" caption="{{ 'Ngày phê duyệt' | localize }}" dataType="date"
+        format="dd/MM/yyyy HH:mm:ss" width="150">
+    </dxi-column>
+    <dxi-column dataField="note" caption="{{ 'Ghi chú' | localize }}" width="50%">
+    </dxi-column>
+    <!-- <dxi-column dataField="status" caption="{{ 'Trạng thái' | localize }}" width="100">
+    </dxi-column> -->
+
+    <dxi-column dataField="status" caption="{{ 'Trạng thái' | localize }}" [width]="10 + '%'" [allowSorting]="false"
+        alignment="center">
+    </dxi-column>
+</dx-data-grid>

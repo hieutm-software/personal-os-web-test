@@ -1,0 +1,301 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item">
+        <div class="kt-subheader__main">
+            <button icon="back" (click)="onClickBack()" class="btn btn-primary btn-upper"
+                style="background-color: #f6bb35; border: 1px solid #f6bb35">
+                {{ "Về danh sách" | localize }}
+            </button>
+        </div>
+        <div class="kt-subheader__toolbar">
+            <div class="kt-subheader__wrapper"></div>
+        </div>
+    </div>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <p class="dx-form-group-caption">
+                    Thông tin nhân viên đăng ký nghỉ
+                </p>
+                <div class="row justtify-content-between" style="
+                        border: 1px solid #ddd;
+                        border-radius: 5px;
+                        padding: 10px 0;
+                    ">
+                    <div class="col-sm-3">
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "EmployeeName" | localize }}:
+                                {{ employeeInfoData.fullName }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "EmployeeCode" | localize }}:
+                                {{ employeeInfoData.employeeCode }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "PhoneNumber" | localize }}:
+                                {{ employeeInfoData.phoneNumber }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "Email" | localize }}:
+                                {{ employeeInfoData.email }}</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "Function" | localize }}:
+                                {{ employeeInfoData.position }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "JobPosition" | localize }}:
+                                {{ employeeInfoData.viTriCongviec }}
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "Department" | localize }}:
+                                {{ employeeInfoData.departmentName }}</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-5">
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "AnnualDayLastYear" | localize }}
+                                {{ lastYear }}:
+                                {{
+                                employeeAnnualLeaveData.annualLeaveLastYear
+                                }}
+                                (Sử dụng trong Quý I {{ currentYear }})</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "TotalOfAnnualLeave" | localize }}
+                                {{ currentYear }}:
+                                {{
+                                employeeAnnualLeaveData.numberOfAnnualLeave
+                                }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "AnnualDayUsed" | localize }}:
+                                {{ employeeAnnualLeaveData.daysUsed }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "AnnualDayLeft" | localize }}:
+                                {{ employeeAnnualLeaveData.daysLeft }}</label>
+                        </div>
+                        <div>
+                            <label class="dx-field-item-label-text">{{ "số phép đã dùng của năm nay" | localize }}:
+                                {{
+                                employeeAnnualLeaveData.annualLeaveThisYearUsed
+                                }}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <dx-form #leaveApplicationForm [showValidationSummary]="true" labelLocation="top"
+                [(formData)]="leaveApplicationData">
+                <!-- Group 1 -->
+                <!-- <dxi-item itemType="group" [colCount]="2" caption="Phiếu"> -->
+                <dxi-item itemType="group" [colCount]="4" caption="Phiếu đăng ký nghỉ phép">
+                    <!-- <dxi-item [colSpan]="4" editorType="dxCheckBox" [editorOptions]="{value:halfDayOffValue,
+                        onValueChanged:onValueChangedHalfDayOff, readOnly:readOnly}">
+                        <dxo-label text="{{'Nghỉ nửa ngày' | localize}}"></dxo-label>
+                    </dxi-item> -->
+
+                    <!-- Loại nghỉ -->
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                            placeholder: 'Lựa chọn',
+                            dataSource: dataApplicationType,
+                            displayExpr: 'displayText',
+                            valueExpr: 'value',
+                            value: applicationTypeCurValue,
+                            onValueChanged: onValueChangedLeaveApplicationType,
+                            searchEnabled: true
+                        }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'LeaveApplicationType' | localize }}"></dxo-label>
+                    </dxi-item>
+
+                    <!-- <dxi-item editorType="dxSelectBox" [editorOptions]="{placeholder:'Lựa chọn', dataSource:dataApplicationTypeHalfDay,
+                        displayExpr:'displayText', valueExpr:'value',value:applicationTypeHalfDayCurValue, onValueChanged:onValueChangedLeaveApplicationTypeHalfDay,
+                        showClearButton:true, searchEnabled:true}">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'LeaveApplicationType' | localize }}"></dxo-label>
+                    </dxi-item> -->
+                    <!-- Nghỉ từ ngày nào, đến ngày nào -->
+                    <dxi-item itemType="group" [colSpan]="3" [colCount]="3">
+                        <!-- NEW -->
+                        <dxi-item [colSpan]="2" editorType="dxSelectBox" [editorOptions]="{
+                            placeholder: 'Lựa chọn',
+                            dataSource: dataApplicationReason,
+                            displayExpr: 'title',
+                            valueExpr: 'id',
+                            value: reasonValue,
+                            onValueChanged: onValueChangedLeaveApplicationReason,
+                            disabled: leaveTypevalueChange,
+                            searchEnabled: true
+                        }">
+                            <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                            </dxi-validation-rule>
+                            <dxo-label text="{{ 'RegistrationReason' | localize }}"></dxo-label>
+                        </dxi-item>
+                        <!-- Trạng thái đơn -->
+                        <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                            placeholder: 'Lựa chọn',
+                            dataSource: dataStatuses,
+                            displayExpr: 'displayText',
+                            valueExpr: 'value',
+                            value: leaveApplicationData.status,
+                            readOnly: true
+                        }">
+                            <dxo-label text="{{ 'Status' | localize }}"></dxo-label>
+                        </dxi-item>
+                    </dxi-item>
+                    <dxi-item [colSpan]="1" dataField="fromDate" editorType="dxDateBox" [editorOptions]="{
+                        value: leaveApplicationData?.fromDate,
+                        width: '100%',
+                        displayFormat: 'dd/MM/yyyy',
+                        readOnly: readOnly,
+                        onValueChanged: fromDateValueChanged
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'FromDate' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <dxi-item [colSpan]="1" dataField="toDate" editorType="dxDateBox" [editorOptions]="{
+                        value: leaveApplicationData?.toDate,
+                        width: '100%',
+                        displayFormat: 'dd/MM/yyyy',
+                        readOnly: readOnly,
+                        onValueChanged: toDateValueChanged
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'ToDate' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <!-- Số ngày nghỉ -->
+                    <dxi-item itemType="group" [colSpan]="1" [colCount]="3">
+                        <dxi-item [colSpan]="2" editorType="dxTextBox" dataField="numberOfDayOff" [editorOptions]="{
+                            readOnly: true,
+                            value: numberOfDayOffValue,
+                            onValueChanged: numberOfDayValueChanged
+                        }">
+                            <!-- Ngày còn lại -->
+                            <dxo-label text="{{ 'NumberOfDayOff' | localize }}"></dxo-label>
+                        </dxi-item>
+
+                        <!-- Nghỉ cuối tuần -->
+                        <dxi-item [colSpan]="1" editorType="dxCheckBox" dataField="isWeekendLeave" [editorOptions]="{
+                            value: isLeaveWeekendValue,
+                            onValueChanged: onValueChangedWeekend
+                        }">
+                            <dxo-label text="{{ 'IsWeekendLeave' | localize }}"></dxo-label>
+                        </dxi-item>
+                    </dxi-item>
+                    <!-- Người xem sét -->
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                        placeholder: 'Lựa chọn',
+                        dataSource: dataCensor,
+                        displayExpr: 'displayText',
+                        valueExpr: 'value',
+                        value: censorValue,
+                        onValueChanged: onValueChangedCensor,
+                        showClearButton: true,
+                        searchEnabled: true
+                    }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Reviewer' | localize }}"></dxo-label>
+                    </dxi-item>
+
+                    <!-- Phòng/Ban -->
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                            placeholder: 'Lựa chọn',
+                            dataSource: dataDepartment,
+                            displayExpr: 'displayText',
+                            valueExpr: 'value',
+                            value: leaveApplicationData.departmentId,
+                            onValueChanged: onValueChangedDepartment,
+                            showClearButton: true,
+                            readOnly: true,
+                            searchEnabled: true
+
+                        }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Department' | localize }}"></dxo-label>
+                    </dxi-item>
+
+
+                    <!-- Người nhận bàn giao -->
+                    <dxi-item editorType="dxSelectBox" [editorOptions]="{
+                            placeholder: 'Lựa chọn',
+                            dataSource: dataAuthorized,
+                            displayExpr: 'displayText',
+                            valueExpr: 'value',
+                            value: authorizedValue,
+                            onValueChanged: onValueChangedAuthorized,
+                            showClearButton: true,
+                            searchEnabled: true
+                        }">
+                        <dxo-label text="{{ 'Authorized' | localize }}"></dxo-label>
+                    </dxi-item>
+
+                    <!-- Người liên quan -->
+                    <dxi-item itemType="group" [colSpan]="2" [colCount]="2">
+                        <dxi-item editorType="dxTextArea" [colSpan]="2" [editorOptions]="{
+                                value: txtUserGrpRelatedPeopleSelection,
+                                placeholder: 'Lựa chọn ...',
+                                readOnly: true
+                            }">
+                            <dxo-label text="{{ 'RelatedPeople' | localize }}"></dxo-label>
+                        </dxi-item>
+                        <dxi-item itemType="empty"></dxi-item>
+                        <dxi-item itemType="button" [buttonOptions]="relatedPeopleListButton">
+                        </dxi-item>
+                    </dxi-item>
+                    <!-- Lý do xin nghỉ -->
+                    <dxi-item [colSpan]="2" dataField="registrationReason" title="{{ 'RegistrationReason' | localize }}"
+                        editorType="dxTextArea" [editorOptions]="{
+                        disabled: readOnly,
+                        height: 90,
+                        maxLength: '2000'
+                        }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'Lý do chi tiết' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <!-- Có gửi mail không ? -->
+                    <!-- <dxi-item [colSpan]="1" editorType="dxCheckBox" dataField="sendMail" [editorOptions]="{
+                            value: isLeaveSendMailValue,
+                            onValueChanged: onValueChangedSendMail
+                        }">
+                        <dxo-label text="{{ 'Có gửi mail?' | localize }}"></dxo-label>
+                    </dxi-item> -->
+                    <!-- Lý do Xin đổi -->
+                    <dxi-item [(visible)]="reasonEditVisible" [colSpan]="2" dataField="reasonEdit"
+                        title="{{ 'ReasonEdit' | localize }}" editorType="dxTextArea" [editorOptions]="{
+                            disabled: readOnly,
+                            height: 90,
+                            maxLength: '2000'
+                        }">
+                        <dxi-validation-rule type="required" message="Trường bắt buộc cần nhập">
+                        </dxi-validation-rule>
+                        <dxo-label text="{{ 'ReasonEdit' | localize }}"></dxo-label>
+                    </dxi-item>
+                    <!-- Button Actions -->
+                    <dxi-item itemType="group" [colSpan]="2" [colCount]="2">
+                        <dxi-item [colSpan]="1" itemType="button" horizontalAlignment="right"
+                            [buttonOptions]="saveButtonOptions"></dxi-item>
+                        <dxi-item [colSpan]="1" itemType="button" horizontalAlignment="left"
+                            [buttonOptions]="cancelEditButtonOptions" alignment="right"></dxi-item>
+                    </dxi-item>
+                </dxi-item>
+                <!-- </dxi-item> -->
+            </dx-form>
+            <!-- <app-handle-document-in (onHandleCompleted)="onHandleCompleted($event)"></app-handle-document-in> -->
+            <app-user-group #userGroupOwnerPopup [groupSource]="UserGroups"
+                (onEditUnitsCompleted)="onEditCompletedOwner($event)"></app-user-group>
+            <app-preview-file></app-preview-file>
+        </div>
+    </div>
+</div>

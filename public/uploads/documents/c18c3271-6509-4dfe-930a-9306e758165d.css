@@ -1,0 +1,19 @@
+.logsTable {
+    border: 1px solid #BACBD5;
+    border-radius: 5px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    background-color: #fdfbfb;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.caption {
+    margin-top: 6px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    color: black;
+}

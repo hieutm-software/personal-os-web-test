@@ -1,0 +1,109 @@
+<div [@routerTransition]>
+    <div class="kt-subheader kt-grid__item">
+        <div class="kt-subheader__main">
+            <!-- <h3 class="kt-subheader__title">
+                <span>{{ "LeaveApplication Type" | localize }}</span>
+            </h3>
+            <span class="kt-subheader__separator kt-subheader__separator--v"></span>
+            <span class="kt-subheader__desc">
+                {{ "List LeaveApplication Type" | localize }}
+            </span> -->
+        </div>
+        <div class="kt-subheader__toolbar">
+            <div class="kt-subheader__wrapper">
+                <!-- <div class="dx-field-value"> -->
+                <!-- <dx-text-box placeholder="Enter full name here..."></dx-text-box> -->
+                <!-- </div>
+                  <div class="dx-field-value"> -->
+                <!-- <button (click)="createApprovalRole()" *ngIf="isGranted('Pages.Categories.ApprovalRoles.Create')" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> {{ "Tạo mới" | localize }}
+                    </button> -->
+                <!-- </div> -->
+            </div>
+        </div>
+    </div>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <app-toolbar [isAllowCreate]="isGranted('Pages.LeaveRegistration.ApprovalRole.Create')"
+                    (onSearch)="search($event)" (onCreate)="createApprovalRole()">
+                </app-toolbar>
+
+                <!-- <dx-data-grid #dataGrid class="grid" keyExpr="id" [dataSource]="dataSource" [remoteOperations]="true" [height]="88 + '%'" [width]="100 + '%'" [showBorders]="true" [columnAutoWidth]="true" [wordWrapEnabled]="true" [showColumnLines]="false" [showRowLines]="true"
+                [rowAlternationEnabled]="true" [focusedRowEnabled]="true" [focusedRowIndex]="0" [allowColumnResizing]="false" [columnHidingEnabled]="true" columnResizingMode="widget" dateSerializationFormat="yyyy-MM-ddTHH:mm:ss" > -->
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" [remoteOperations]="true" keyExpr="id"
+                        [showBorders]="true" [columnAutoWidth]="true" [wordWrapEnabled]="true"
+                        [focusedRowEnabled]="true" (onCellPrepared)="onCellPrepared($event)">
+
+                        <!-- <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-scrolling mode="virtual"></dxo-scrolling> -->
+                        <dxo-paging [enabled]="true" [pageSize]="10" [pageIndex]="0"></dxo-paging>
+                        <dxo-sorting mode="none"></dxo-sorting>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true">
+                        </dxo-pager>
+
+                        <dxo-editing mode="popup" [allowUpdating]="allowUpdating" [allowDeleting]="allowDeleting"
+                            [allowAdding]="false">
+                            <dxo-texts confirmDeleteMessage="{{
+                                    'Bạn có chắc muốn xóa vai trò phê duyệt' | localize
+                                }}" confirmDeleteTitle="{{ 'Xóa vai trò phê duyệt' | localize }}"></dxo-texts>
+                        </dxo-editing>
+                        <dxi-column dataField="id" sortOrder="desc" caption="{{ 'Id' | localize }}" [visible]="false">
+                        </dxi-column>
+                        <dxi-column dataField="roleCode" caption="{{ 'Mã Vai trò' | localize }}" [width]="15+'%'"
+                        alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="role" caption="{{ 'Tên vai trò' | localize }}" [width]="15+'%'"
+                            alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="censorId" caption="{{ 'ID Người phê duyệt' | localize }}"
+                            [width]="10+'%'" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="departmentId" caption="{{ 'ID Phòng ban' | localize }}" [width]="15+'%'"
+                            alignment="center">
+                        </dxi-column>
+
+                        <!-- <dxi-column dataField="roleCode" caption="{{ 'Mã vai trò' | localize }}" [width]="5+'%'">
+                        </dxi-column> -->
+                        <!-- <dxi-column dataField="censorName" caption="{{ 'Người ký' | localize }}" [width]="10+'%'">
+                        </dxi-column> -->
+                        <!-- <dxi-column dataField="departmentName" caption="{{ 'Phòng ban' | localize }}" [width]="10+'%'">
+                        </dxi-column> -->
+                        <dxi-column dataField="canApproveHalfDayLeave" caption="{{ 'Phê duyệt nửa ngày' | localize }}"
+                            [width]="5+'%'" alignment="center">
+                        </dxi-column>
+                        <dxi-column dataField="status" caption="{{ 'ID Trạng thái được phê duyệt' | localize }}"
+                            [width]="15+'%'" alignment="center">
+                        </dxi-column>
+
+                        <dxi-column dataField="description" caption="{{ 'Mô tả' | localize }}" [width]="20+'%'"
+                            alignment="center">
+                        </dxi-column>
+
+                        <dxi-column dataField="isActive" caption="{{ 'Trạng thái hoạt động' | localize }}"
+                            [width]="10+'%'" alignment="center">
+                            <dxo-lookup [dataSource]="lstStatuses" valueExpr="value" displayExpr="text">
+                            </dxo-lookup>
+                        </dxi-column>
+
+                        <dxi-column type="buttons" caption="{{ 'Thao tác' | localize }}" [width]="10+'%'">
+                            <dxi-button name="review" icon="fi flaticon-eye"
+                                [onClick]="onViewApprovalRole"></dxi-button>
+                            <dxi-button name="edit" icon="edit" [onClick]="onEditApprovalRole"></dxi-button>
+                            <dxi-button name="delete" icon="trash" [onClick]="onDelete"></dxi-button>
+                        </dxi-column>
+                        <!-- <dxo-export [enabled]="false"></dxo-export> -->
+                    </dx-data-grid>
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+
+    <approval-role-edit-popup (onEditUnitsCompleted)="onEditCompleted($event)"></approval-role-edit-popup>
+
+</div>

@@ -1,0 +1,76 @@
+<div [@routerTransition]>
+    <div class="kt-content">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">
+                <div class="row container1">
+                    <input type='text' style="width: 340px; margin-right: 5px;" (keyup.enter)="search()"
+                        (change)="OnTextChange($event)" [(ngModel)]="filterText" class='form-control'
+                        placeholder='{{"Tìm kiếm nhanh" | localize}}'>
+                    <button style="margin-right: 5px;" (click)="search()" class="btn btn-primary">
+                        {{ "Tìm kiếm" | localize }}
+                    </button>
+
+                    <button class="btn btn-primary" style="margin-right: 5px;"
+                        *ngIf="isGranted('Pages.ChamCong.KetQuaChamCong.Create')" (click)="onCreate()">
+                        <i class="fa fa-plus"></i> {{ "Tạo mới" | localize }}
+                    </button>
+                    <!-- <dx-button icon="refresh" (onClick)="refresh()"> </dx-button> -->
+                </div>
+                <div class="row align-items-center">
+                    <dx-data-grid #dataGrid [dataSource]="dataSource" keyExpr="id" [showBorders]="true"
+                        [columnAutoWidth]="true" [wordWrapEnabled]="true" [focusedRowEnabled]="true"columnResizingMode="nextColumn" 
+                        (onCellPrepared)="onCellPrepared($event)">
+
+                        <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+                        <dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 15, 20, 30]"
+                            [showInfo]="true" [visible]="true">
+                        </dxo-pager>
+                        <dxo-editing mode="popup" [allowUpdating]="allowUpdating" [allowDeleting]="allowDeleting" [allowAdding]="false">
+                            <dxo-texts confirmDeleteMessage="{{
+                                    'Bạn có chắc muốn xóa bản ghi này' | localize
+                                }}" confirmDeleteTitle="{{ 'Xóa bản ghi' | localize }}"></dxo-texts>
+                        </dxo-editing>
+                        <dxi-column dataField="id" caption="{{ 'Id' | localize }}" [visible]="false">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center text-center" dataField="index"
+                            caption="{{ 'STT' | localize }}" [visible]="true" [width]="40">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="number" caption="{{ 'Số văn bản' | localize }}"
+                            [width]="10 +'%'">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="authorizerName" caption="{{ 'Bên ủy quyền' | localize }}" [width]="10 +'%'">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="authorizedPersonName" caption="{{ 'Bên nhận ủy quyền' | localize }}" [width]="10 +'%'">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="valideFromDate" caption="{{ 'Hiệu lực từ ngày' | localize }}" [width]="10 +'%'" 
+                        alignment="center" dataType="date" format="dd/MM/yyyy">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="valideToDate" caption="{{ 'Hiệu lực đến ngày' | localize }}" [width]="10 +'%'" 
+                        alignment="center" dataType="date" format="dd/MM/yyyy">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="content" caption="{{ 'Nội dung ủy quyền' | localize }}" [width]="30 +'%'" alignment="center">
+                        </dxi-column>
+                        <dxi-column cssClass="header-center" dataField="status" caption="{{ 'Trạng thái' | localize }}" [width]="10 +'%'" cellTemplate="statusTemplate">
+                            <!-- <dxo-lookup [dataSource]="lstStatuses" valueExpr="value" displayExpr="text">
+                            </dxo-lookup> -->
+                        </dxi-column>
+                        <div *dxTemplate="let data of 'statusTemplate'">
+                            <span *ngIf="data.data.status === null || data.data.status === undefined"></span>
+                            <span style="color:#c08700;text-align: left;display: flex" *ngIf="data.data.status === 0">Chưa có hiệu lực</span>
+                            <span style="color:green;text-align: left;display: flex" *ngIf="data.data.status === 1">Có hiệu lực</span>
+                            <span style="color:red;text-align: left;display: flex" *ngIf="data.data.status === 2">Hết hiệu lực</span>
+                            <span style="color:red;text-align: left;display: flex" *ngIf="data.data.status === 3">Không sử dụng</span>
+                        </div>
+                        <dxi-column type="buttons" caption="{{ 'Thao tác' | localize }}"
+                            [width]="10 +'%'">
+                            <dxi-button icon="fi flaticon-eye" [onClick]="onView"></dxi-button>
+                            <dxi-button name="edit" icon="edit" [onClick]="onEdit"></dxi-button>
+                            <dxi-button title="Delete" name="delete" icon="trash" [onClick]="onDelete"></dxi-button>
+                        </dxi-column>
+                    </dx-data-grid>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<app-create-or-update-authorization #createOrUpdateLeaveApprovalAuthorization (modalSave)="getAll()"></app-create-or-update-authorization>
