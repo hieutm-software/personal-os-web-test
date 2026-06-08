@@ -55,7 +55,17 @@ export function AdminDialog({
     status: createStatus,
     result: createResult,
     reset: resetCreate,
-  } = useAction(createUserAction);
+  } = useAction(createUserAction, {
+    onSuccess: (actionResult) => {
+      if (actionResult.data?.success) {
+        form.reset({ username: "", password: "", role: "USER", sudoPassword: "" });
+        setTimeout(() => {
+          resetCreate();
+          setIsCreateOpen(false);
+        }, 1500);
+      }
+    }
+  });
   const {
     execute: execDelete,
     status: deleteStatus,
@@ -78,13 +88,6 @@ export function AdminDialog({
 
   const onSubmitCreate = (data: CreateForm) => {
     execCreate(data);
-    if (createResult.data?.success) {
-      form.reset({ ...data, password: "", sudoPassword: "" });
-      setTimeout(() => {
-        resetCreate();
-        setIsCreateOpen(false);
-      }, 1500);
-    }
   };
 
   const handleConfirmDelete = () => {
