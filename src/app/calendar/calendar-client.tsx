@@ -151,8 +151,10 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
         endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso,
       });
     } else {
-      setLocalEvents((prev) => [{ id: "temp-" + Date.now(), title: data.title, description: data.description ?? null, startTime: defaultIso, endTime: defaultIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
+      const newId = crypto.randomUUID();
+      setLocalEvents((prev) => [{ id: newId, title: data.title, description: data.description ?? null, startTime: defaultIso, endTime: defaultIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
       execCreate({
+        id: newId,
         title: data.title,
         description: data.description ?? null,
         startTime: defaultIso,

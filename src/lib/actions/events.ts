@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
+import crypto from "crypto";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -19,6 +20,7 @@ const actionClient = createSafeActionClient();
 // Support standard recurrence strings (e.g., RRULE: FREQ=WEEKLY;BYDAY=MO,WE,FR)
 const createEventSchema = z
   .object({
+    id: z.string().uuid().optional(),
     title: z.string().min(1, "Title is required"),
     description: z.string().optional().nullable(),
     startTime: z
@@ -95,6 +97,7 @@ export const createEventAction = actionClient
 
       // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(events).values({
+        id: parsedInput.id || crypto.randomUUID(),
         userId: session.userId,
         title: parsedInput.title,
         description: parsedInput.description,

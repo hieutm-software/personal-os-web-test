@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
+import crypto from "crypto";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -17,6 +18,7 @@ import { checkNeonQuota } from "./quota";
 const actionClient = createSafeActionClient();
 
 const createTaskSchema = z.object({
+  id: z.string().uuid().optional(),
   title: z.string().min(1, "Title is required"),
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).default("PENDING"),
 });
@@ -70,6 +72,7 @@ export const createTaskAction = actionClient
 
       // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(tasks).values({
+        id: parsedInput.id || crypto.randomUUID(),
         userId: session.userId,
         title: parsedInput.title,
         status: parsedInput.status,

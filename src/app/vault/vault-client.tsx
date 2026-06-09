@@ -172,6 +172,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
         });
       });
       execCreate({
+        id: tempId,
         platform: data.platform,
         username: data.username,
         password: data.password!,

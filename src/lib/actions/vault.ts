@@ -55,12 +55,13 @@ function decryptPassword(encryptedStr: string): string {
 // Actions
 export const createVaultItemAction = actionClient
   .schema(z.object({
+    id: z.string().uuid().optional(),
     platform: z.string().min(1),
     username: z.string().min(1),
     password: z.string().min(1),
     note: z.string().optional(),
   }))
-  .action(async ({ parsedInput: { platform, username, password, note } }) => {
+  .action(async ({ parsedInput: { id, platform, username, password, note } }) => {
     const cookieStore = await cookies();
     const token = cookieStore.get("session")?.value;
     if (!token) return { failure: "Unauthorized" };
@@ -79,6 +80,7 @@ export const createVaultItemAction = actionClient
     const passwordEncrypted = encryptPassword(password);
 
     await db.insert(vault).values({
+      id: id || crypto.randomUUID(),
       userId: session.userId,
       platform,
       username,

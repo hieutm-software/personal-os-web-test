@@ -153,8 +153,9 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
         title: data.title,
       });
     } else {
+      const newId = crypto.randomUUID();
       setLocalTasks(prev => [{
-        id: "temp-" + Date.now(),
+        id: newId,
         title: data.title,
         status: data.status || "PENDING",
         userId: "",
@@ -162,6 +163,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
         updatedAt: new Date().toISOString()
       } as Task, ...prev]);
       execCreate({
+        id: newId,
         title: data.title,
       });
     }
