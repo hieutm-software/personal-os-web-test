@@ -17,6 +17,7 @@ const actionClient = createSafeActionClient();
 // ============================================================================
 
 const createNoteSchema = z.object({
+  id: z.string().uuid().optional(),
   title: z.string().optional(),
   content: z.string().default(""), // Can store Text, JSON, or Markdown
 });
@@ -76,6 +77,7 @@ export const createNoteAction = actionClient
         .where(
           and(
             eq(notes.userId, session.userId),
+            isNull(notes.deletedAt),
             like(notes.title, `${baseTitle}%`)
           )
         );
@@ -89,9 +91,12 @@ export const createNoteAction = actionClient
         finalTitle = `${baseTitle} ${i}`;
       }
 
+      const noteIdToUse = parsedInput.id || crypto.randomUUID();
+
       const [newNote] = await db
         .insert(notes)
         .values({
+          id: noteIdToUse,
           userId: session.userId,
           title: finalTitle,
           content: parsedInput.content,

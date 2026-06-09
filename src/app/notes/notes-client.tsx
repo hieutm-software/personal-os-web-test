@@ -249,8 +249,29 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   };
 
   const handleCreate = () => {
+    const newId = crypto.randomUUID();
+    const newTitle = t("untitled");
+    
+    // Optimistically add to local state
+    setLocalNotes((prev) => [
+      {
+        id: newId,
+        title: newTitle,
+        content: "",
+        userId: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      } as Note,
+      ...prev,
+    ]);
+    
+    // Instantly navigate to the new note
+    void setActiveNoteId(newId);
     setEditorTab("write");
-    execCreate({ title: t("untitled"), content: "" });
+    
+    // Fire server action
+    execCreate({ id: newId, title: newTitle, content: "" });
   };
 
   const handleEditClick = (note: Note, e?: React.MouseEvent) => {
@@ -345,9 +366,29 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     const reader = new FileReader();
     reader.onload = (event) => {
       isImportingRef.current = true;
+      const newId = crypto.randomUUID();
+      const newTitle = file.name.replace(/\.[^/.]+$/, "");
+      const newContent = event.target?.result as string;
+
+      // Optimistically add to local state
+      setLocalNotes((prev) => [
+        {
+          id: newId,
+          title: newTitle,
+          content: newContent,
+          userId: "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+        } as Note,
+        ...prev,
+      ]);
+
+      // Fire server action
       execCreate({ 
-        title: file.name.replace(/\.[^/.]+$/, ""), 
-        content: event.target?.result as string 
+        id: newId,
+        title: newTitle, 
+        content: newContent 
       });
     };
     reader.readAsText(file);
