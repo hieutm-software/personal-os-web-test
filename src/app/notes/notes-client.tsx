@@ -182,18 +182,24 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     }
   }, [activeNote]);
 
-  // Auto-routing upon new note creation
+  // Auto-routing upon new note creation (switch to active tab, but do not auto-open)
   useEffect(() => {
     if (createResult.data?.success && createResult.data.noteId) {
-      if (!isImportingRef.current) {
-        void setActiveNoteId(createResult.data.noteId);
-      } else {
+      if (isImportingRef.current) {
         isImportingRef.current = false;
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab("active");
     }
-  }, [createResult.data, setActiveNoteId]);
+  }, [createResult.data]);
+
+  // Preload MarkdownEditor chunk in background to make opening notes instantly fast
+  useEffect(() => {
+    const preloadTimeout = setTimeout(() => {
+      import("@/components/editor/markdown");
+    }, 1000);
+    return () => clearTimeout(preloadTimeout);
+  }, []);
 
   // Handlers
   const handleSave = () => {
@@ -241,19 +247,9 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   }, [isDialogOpen, isDirty, activeNote, localTitle, localContent]);
 
   const handleCloseDialog = () => {
-    // Unmount save or cleanup
-    if (activeNote) {
-      const isEmptyAndUntitled = 
-        localContent.trim() === "" && 
-        (localTitle.trim() === "" || localTitle.trim().toLowerCase() === t("untitled").toLowerCase());
-
-      if (isEmptyAndUntitled) {
-        // Garbage collect empty, untouched notes immediately
-        setLocalNotes((prev) => prev.filter((n) => n.id !== activeNote.id));
-        execPermanentDelete({ id: activeNote.id });
-      } else if (isDirty) {
-        handleSave();
-      }
+    // Unmount save
+    if (isDirty && activeNote) {
+      handleSave();
     }
     void setActiveNoteId("");
   };
@@ -275,10 +271,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       } as Note,
       ...prev,
     ]);
-    
-    // Instantly navigate to the new note
-    void setActiveNoteId(newId);
-    setEditorTab("write");
     
     // Fire server action
     execCreate({ id: newId, title: newTitle, content: "" });
