@@ -241,9 +241,19 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   }, [isDialogOpen, isDirty, activeNote, localTitle, localContent]);
 
   const handleCloseDialog = () => {
-    // Unmount save
-    if (isDirty && activeNote) {
-      handleSave();
+    // Unmount save or cleanup
+    if (activeNote) {
+      const isEmptyAndUntitled = 
+        localContent.trim() === "" && 
+        (localTitle.trim() === "" || localTitle.trim().toLowerCase() === t("untitled").toLowerCase());
+
+      if (isEmptyAndUntitled) {
+        // Garbage collect empty, untouched notes immediately
+        setLocalNotes((prev) => prev.filter((n) => n.id !== activeNote.id));
+        execPermanentDelete({ id: activeNote.id });
+      } else if (isDirty) {
+        handleSave();
+      }
     }
     void setActiveNoteId("");
   };
