@@ -8,6 +8,7 @@ import { createSafeActionClient } from "next-safe-action";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { checkNeonQuota } from "./quota";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -59,6 +60,14 @@ export const createTaskAction = actionClient
     try {
       const session = await getAuthenticatedUser();
 
+      const approxBytes = parsedInput.title?.length || 0;
+      if (approxBytes > 0) {
+        const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+        if (!hasQuota) {
+          return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+        }
+      }
+
       // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(tasks).values({
         userId: session.userId,
@@ -80,6 +89,14 @@ export const updateTaskAction = actionClient
   .action(async ({ parsedInput: { id, ...updates } }) => {
     try {
       const session = await getAuthenticatedUser();
+
+      const approxBytes = updates.title?.length || 0;
+      if (approxBytes > 0) {
+        const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+        if (!hasQuota) {
+          return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+        }
+      }
 
       // STRICT DATA ISOLATION: Enforce userId matching on update mutations
       const result = await db

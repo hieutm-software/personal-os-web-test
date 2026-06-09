@@ -77,6 +77,10 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
 
   // Nuqs URL State for selected date
   const [selectedDateStr, setSelectedDateStr] = useQueryState("date");
+  
+  const [localEvents, setLocalEvents] = useState<Event[]>(initialEvents);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setLocalEvents(initialEvents), [initialEvents]);
 
   // Local state for calendar viewing month
   const [currentMonth, setCurrentMonth] = useState(
@@ -138,6 +142,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     const defaultIso = `${fallbackDateStr}T00:00:00.000Z`;
 
     if (editingEvent) {
+      setLocalEvents((prev) => prev.map((e) => e.id === editingEvent.id ? { ...e, title: data.title, description: data.description ?? null, startTime: editingEvent.startTime ? new Date(editingEvent.startTime).toISOString() : defaultIso, endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso } : e));
       execUpdate({
         id: editingEvent.id,
         title: data.title,
@@ -146,6 +151,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
         endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso,
       });
     } else {
+      setLocalEvents((prev) => [{ id: "temp-" + Date.now(), title: data.title, description: data.description ?? null, startTime: defaultIso, endTime: defaultIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
       execCreate({
         title: data.title,
         description: data.description ?? null,
@@ -218,12 +224,16 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
   const handleDeleteAll = async () => {
     if (selectedEventIds.size > 0) {
       if (await confirm(`Are you sure you want to delete ${selectedEventIds.size} selected event(s)?`, { title: `Delete ${selectedEventIds.size} Events`, confirmText: "Delete", variant: "destructive" })) {
-        execBulkDelete({ ids: Array.from(selectedEventIds) });
+        const ids = Array.from(selectedEventIds);
+        setLocalEvents((prev) => prev.filter((ev) => !ids.includes(ev.id)));
+        execBulkDelete({ ids });
         setSelectedEventIds(new Set());
       }
     } else {
       if (eventsToShow.length > 0 && await confirm("Are you sure you want to permanently delete ALL events shown?", { title: "Delete All Events", confirmText: "Delete", variant: "destructive" })) {
-        execBulkDelete({ ids: eventsToShow.map((ev) => ev.id) });
+        const ids = eventsToShow.map((ev) => ev.id);
+        setLocalEvents((prev) => prev.filter((ev) => !ids.includes(ev.id)));
+        execBulkDelete({ ids });
       }
     }
   };
@@ -240,7 +250,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
   }, [currentMonth]);
 
   const allEventsSorted = useMemo(() => {
-    return [...initialEvents].sort((a, b) => {
+    return [...localEvents].sort((a, b) => {
       let comparison = 0;
       if (sortConfig.key === "title") {
         comparison = (a.title || "").localeCompare(b.title || "");
@@ -253,7 +263,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
       }
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
-  }, [initialEvents, sortConfig]);
+  }, [localEvents, sortConfig]);
 
   const renderSortIcon = (columnKey: "title" | "createdAt" | "date") => {
     if (sortConfig.key !== columnKey) return null;
@@ -474,7 +484,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                 now.setHours(0, 0, 0, 0);
                 const isPastDay = day.getTime() < now.getTime();
 
-                const dayEventCount = initialEvents.filter((e) => {
+                const dayEventCount = localEvents.filter((e) => {
                   if (!e.startTime && !e.endTime) return false;
                   const s = e.startTime ? new Date(e.startTime) : (e.endTime ? new Date(e.endTime) : new Date());
                   const en = e.endTime ? new Date(e.endTime) : s;
@@ -618,6 +628,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                             actionType="delete"
                             onClick={(e) => {
                               e.stopPropagation();
+                              setLocalEvents((prev) => prev.filter((ev) => ev.id !== event.id));
                               execDelete({ id: event.id });
                             }}
                             title={t("delete")}

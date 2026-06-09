@@ -1,6 +1,8 @@
 "use client";
 
-import { MarkdownEditor } from "@/components/editor/markdown";
+import dynamic from "next/dynamic";
+const MarkdownEditor = dynamic(() => import("@/components/editor/markdown").then(mod => mod.MarkdownEditor), { ssr: false, loading: () => <div className="h-full w-full flex items-center justify-center text-muted-foreground">Loading editor...</div> });
+
 import {
   Dialog,
   DialogContent,
@@ -52,11 +54,14 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const t = useTranslations("Notes");
   const { confirm } = useDialogs();
 
-  // URL State — syncs active note ID to the URL (for the dialog)
   const [activeNoteId, setActiveNoteId] = useQueryState("id", {
     defaultValue: "",
   });
   
+  const [localNotes, setLocalNotes] = useState<Note[]>(initialNotes);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setLocalNotes(initialNotes), [initialNotes]);
+
   // Local State
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"active" | "trash">("active");
@@ -100,7 +105,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const isDirty = activeNote ? localTitle !== activeNote.title || localContent !== activeNote.content : false;
 
   const filteredNotes = useMemo(() => {
-    return initialNotes
+    return localNotes
       .filter((n) => (activeTab === "active" ? !n.deletedAt : n.deletedAt))
       .filter((n) => {
         if (!searchQuery) return true;
@@ -131,7 +136,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
         if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
-  }, [initialNotes, activeTab, searchQuery, sortConfig]);
+  }, [localNotes, activeTab, searchQuery, sortConfig]);
 
   const renderSortIcon = (columnKey: "title" | "createdAt" | "updatedAt") => {
     if (sortConfig.key !== columnKey) return null;
@@ -193,6 +198,13 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   // Handlers
   const handleSave = () => {
     if (!activeNote || !isDirty) return;
+    setLocalNotes((prev) =>
+      prev.map((n) =>
+        n.id === activeNote.id
+          ? { ...n, title: localTitle || t("untitled"), content: localContent, updatedAt: new Date().toISOString() }
+          : n
+      )
+    );
     execUpdate({
       id: activeNote.id,
       title: localTitle || t("untitled"),
@@ -250,14 +262,16 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const handleDelete = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (activeNoteId === id) void setActiveNoteId("");
+    setLocalNotes((prev) => prev.map((n) => n.id === id ? { ...n, deletedAt: new Date().toISOString() } : n));
     execDelete({ id });
   };
 
   const handleRestore = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const note = initialNotes.find((n) => n.id === id) || filteredNotes.find((n) => n.id === id);
+    const note = localNotes.find((n) => n.id === id);
     if (!note) return;
     if (await confirm(`Are you sure you want to restore "${note.title || "Untitled"}"?`, { title: "Restore Item", confirmText: "Restore", variant: "default" })) {
+      setLocalNotes((prev) => prev.map((n) => n.id === id ? { ...n, deletedAt: null } : n));
       execRestore({ id });
     }
   };
@@ -265,6 +279,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const handlePermanentDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (await confirm(`Are you sure you want to permanently delete this item?`, { title: "Delete Item", confirmText: "Delete", variant: "destructive" })) {
+      setLocalNotes((prev) => prev.filter((n) => n.id !== id));
       execPermanentDelete({ id });
     }
   };
@@ -272,11 +287,14 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const handleEmptyTrash = async () => {
     if (selectedNoteIds.size > 0) {
       if (await confirm(`Are you sure you want to permanently delete ${selectedNoteIds.size} selected item(s)?`, { title: `Delete ${selectedNoteIds.size} Items`, confirmText: "Delete", variant: "destructive" })) {
-        execBulkPermanentDelete({ ids: Array.from(selectedNoteIds) });
+        const ids = Array.from(selectedNoteIds);
+        setLocalNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
+        execBulkPermanentDelete({ ids });
         setSelectedNoteIds(new Set());
       }
     } else {
       if (await confirm("Are you sure you want to permanently delete all items in the Trash?", { title: "Empty Trash", confirmText: "Empty Trash", variant: "destructive" })) {
+        setLocalNotes((prev) => prev.filter((n) => !n.deletedAt));
         execEmptyTrash();
       }
     }
@@ -285,11 +303,14 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const handleRestoreAll = async () => {
     if (selectedNoteIds.size > 0) {
       if (await confirm(`Are you sure you want to restore ${selectedNoteIds.size} selected item(s)?`, { title: `Restore ${selectedNoteIds.size} Items`, confirmText: "Restore", variant: "default" })) {
-        execBulkRestore({ ids: Array.from(selectedNoteIds) });
+        const ids = Array.from(selectedNoteIds);
+        setLocalNotes((prev) => prev.map((n) => ids.includes(n.id) ? { ...n, deletedAt: null } : n));
+        execBulkRestore({ ids });
         setSelectedNoteIds(new Set());
       }
     } else {
       if (await confirm("Are you sure you want to restore all items from the Trash?", { title: "Restore All", confirmText: "Restore", variant: "default" })) {
+        setLocalNotes((prev) => prev.map((n) => ({ ...n, deletedAt: null })));
         execRestoreAll();
       }
     }
@@ -297,9 +318,12 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
   const handleDeleteAll = async () => {
     if (selectedNoteIds.size > 0) {
-      execBulkDelete({ ids: Array.from(selectedNoteIds) });
+      const ids = Array.from(selectedNoteIds);
+      setLocalNotes((prev) => prev.map((n) => ids.includes(n.id) ? { ...n, deletedAt: new Date().toISOString() } : n));
+      execBulkDelete({ ids });
       setSelectedNoteIds(new Set());
     } else {
+      setLocalNotes((prev) => prev.map((n) => ({ ...n, deletedAt: new Date().toISOString() })));
       execDeleteAll();
     }
   };

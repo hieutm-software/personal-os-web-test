@@ -76,6 +76,10 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const t = useTranslations("Tasks");
   const { confirm } = useDialogs();
 
+  const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setLocalTasks(initialTasks), [initialTasks]);
+
   // ── STATE ─────────────────────────────────────────────────────────────────
   const [statusFilter, setStatusFilter] = useQueryState("status", {
     defaultValue: "ALL",
@@ -136,16 +140,27 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
 
   const toggleTaskCompletion = (e: React.MouseEvent, task: Task) => {
     e.stopPropagation();
-    execUpdate({ id: task.id, status: NEXT_STATUS_MAP[task.status] });
+    const nextStatus = NEXT_STATUS_MAP[task.status];
+    setLocalTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
+    execUpdate({ id: task.id, status: nextStatus });
   };
 
   const onSubmit = (data: TaskFormValues) => {
     if (modalState.task) {
+      setLocalTasks(prev => prev.map(t => t.id === modalState.task!.id ? { ...t, title: data.title, status: data.status || t.status } : t));
       execUpdate({
         id: modalState.task.id,
         title: data.title,
       });
     } else {
+      setLocalTasks(prev => [{
+        id: "temp-" + Date.now(),
+        title: data.title,
+        status: data.status || "PENDING",
+        userId: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as Task, ...prev]);
       execCreate({
         title: data.title,
       });
@@ -155,7 +170,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
 
   // ── DERIVED STATE ─────────────────────────────────────────────────────────
   const sortedAndFilteredTasks = useMemo(() => {
-    const filtered = initialTasks.filter((task) =>
+    const filtered = localTasks.filter((task) =>
       statusFilter === "ALL" ? true : task.status === statusFilter
     );
 
@@ -170,7 +185,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
       }
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
-  }, [initialTasks, statusFilter, sortConfig]);
+  }, [localTasks, statusFilter, sortConfig]);
 
   // Clean up selected IDs if tasks are deleted or filtered out
   useEffect(() => {
@@ -237,12 +252,16 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const handleDeleteAll = async () => {
     if (selectedTaskIds.size > 0) {
       if (await confirm(`Are you sure you want to delete ${selectedTaskIds.size} selected task(s)?`, { title: `Delete ${selectedTaskIds.size} Tasks`, confirmText: "Delete", variant: "destructive" })) {
-        execBulkDelete({ ids: Array.from(selectedTaskIds) });
+        const idsArray = Array.from(selectedTaskIds);
+        setLocalTasks(prev => prev.filter(t => !selectedTaskIds.has(t.id)));
+        execBulkDelete({ ids: idsArray });
         setSelectedTaskIds(new Set());
       }
     } else {
       if (sortedAndFilteredTasks.length > 0 && await confirm("Are you sure you want to permanently delete ALL tasks shown?", { title: "Delete All Tasks", confirmText: "Delete", variant: "destructive" })) {
-        execBulkDelete({ ids: sortedAndFilteredTasks.map((t) => t.id) });
+        const idsArray = sortedAndFilteredTasks.map((t) => t.id);
+        setLocalTasks(prev => prev.filter(t => !idsArray.includes(t.id)));
+        execBulkDelete({ ids: idsArray });
       }
     }
   };
@@ -433,6 +452,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
                           actionType="delete"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setLocalTasks(prev => prev.filter(t => t.id !== task.id));
                             execDelete({ id: task.id });
                           }}
                           disabled={deleteStatus === "executing"}

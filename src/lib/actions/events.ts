@@ -8,6 +8,7 @@ import { createSafeActionClient } from "next-safe-action";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { checkNeonQuota } from "./quota";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -84,6 +85,14 @@ export const createEventAction = actionClient
     try {
       const session = await getAuthenticatedUser();
 
+      const approxBytes = (parsedInput.title?.length || 0) + (parsedInput.description?.length || 0);
+      if (approxBytes > 0) {
+        const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+        if (!hasQuota) {
+          return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+        }
+      }
+
       // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(events).values({
         userId: session.userId,
@@ -113,6 +122,14 @@ export const updateEventAction = actionClient
       if (updates.startTime && updates.endTime) {
         if (new Date(updates.startTime) > new Date(updates.endTime)) {
           return { failure: "End time cannot be earlier than start time" };
+        }
+      }
+
+      const approxBytes = (updates.title?.length || 0) + (updates.description?.length || 0);
+      if (approxBytes > 0) {
+        const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+        if (!hasQuota) {
+          return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
         }
       }
 

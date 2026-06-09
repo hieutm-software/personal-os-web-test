@@ -9,6 +9,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { checkNeonQuota } from "./quota";
 
 const actionClient = createSafeActionClient();
 
@@ -67,6 +68,14 @@ export const createVaultItemAction = actionClient
     const session = await verifySessionToken(token);
     if (!session) return { failure: "Unauthorized" };
 
+    const approxBytes = platform.length + username.length + password.length + (note?.length || 0);
+    if (approxBytes > 0) {
+      const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+      if (!hasQuota) {
+        return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+      }
+    }
+
     const passwordEncrypted = encryptPassword(password);
 
     await db.insert(vault).values({
@@ -111,6 +120,14 @@ export const updateVaultItemAction = actionClient
 
     const session = await verifySessionToken(token);
     if (!session) return { failure: "Unauthorized" };
+
+    const approxBytes = platform.length + username.length + (password?.length || 0) + (note?.length || 0);
+    if (approxBytes > 0) {
+      const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+      if (!hasQuota) {
+        return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+      }
+    }
 
     const updateData: Record<string, string | null> = {
       platform,
@@ -214,6 +231,14 @@ export const bulkCreateVaultItemsAction = actionClient
     if (!session) return { failure: "Unauthorized" };
 
     if (items.length === 0) return { success: true };
+
+    const approxBytes = items.reduce((sum, item) => sum + item.platform.length + item.username.length + item.password.length + (item.note?.length || 0), 0);
+    if (approxBytes > 0) {
+      const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+      if (!hasQuota) {
+        return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items or import in smaller batches." };
+      }
+    }
 
     const insertData = items.map((item) => ({
       userId: session.userId,

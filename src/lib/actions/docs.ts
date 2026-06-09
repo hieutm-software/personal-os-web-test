@@ -8,6 +8,7 @@ import { createSafeActionClient } from "next-safe-action";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { checkNeonQuota } from "./quota";
 
 const actionClient = createSafeActionClient();
 
@@ -59,6 +60,12 @@ export const createNoteAction = actionClient
     try {
       const session = await getAuthenticatedUser();
 
+      const approxBytes = (parsedInput.title?.length || 0) + parsedInput.content.length;
+      const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+      if (!hasQuota) {
+        return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+      }
+
       const baseTitle = parsedInput.title || "Untitled";
       let finalTitle = baseTitle;
 
@@ -104,6 +111,14 @@ export const updateNoteAction = actionClient
   .action(async ({ parsedInput: { id, ...updates } }) => {
     try {
       const session = await getAuthenticatedUser();
+
+      const approxBytes = (updates.title?.length || 0) + (updates.content?.length || 0);
+      if (approxBytes > 0) {
+        const hasQuota = await checkNeonQuota(session.userId, approxBytes);
+        if (!hasQuota) {
+          return { failure: "NeonDB storage limit of 150MB exceeded. Please delete some items." };
+        }
+      }
 
       // STRICT DATA ISOLATION
       const result = await db

@@ -291,7 +291,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
       }
 
       const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-      const MAX_TOTAL_STORAGE = 100 * 1024 * 1024; // 100MB
+      const MAX_TOTAL_STORAGE = 300 * 1024 * 1024; // 300MB
       let currentTotalUsed = initialDocs.reduce((sum, doc) => sum + doc.sizeBytes, 0);
 
       const uploadPromises = [];
@@ -305,7 +305,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
         }
 
         if (currentTotalUsed + file.size > MAX_TOTAL_STORAGE) {
-          await alert(`Upload of "${file.name}" failed: Total storage limit of 100MB exceeded.`);
+          await alert(`Upload of "${file.name}" failed: Total storage limit of 300MB exceeded.`);
           break; // Stop further uploads to prevent spamming alerts
         }
 

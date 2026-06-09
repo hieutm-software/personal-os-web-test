@@ -51,7 +51,7 @@ export const getUploadUrlAction = actionClient
     if (!session) return { failure: "Unauthorized" };
 
     const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-    const MAX_TOTAL_STORAGE = 100 * 1024 * 1024; // 100MB
+    const MAX_TOTAL_STORAGE = 300 * 1024 * 1024; // 300MB
 
     if (sizeBytes > MAX_FILE_SIZE) {
       return { failure: "File size exceeds the 25MB limit." };
@@ -65,7 +65,7 @@ export const getUploadUrlAction = actionClient
       const totalUsed = Number(result?.total || 0);
 
       if (totalUsed + sizeBytes > MAX_TOTAL_STORAGE) {
-        return { failure: "Total storage limit of 100MB exceeded." };
+        return { failure: "Total storage limit of 300MB exceeded." };
       }
 
       const ext = path.extname(name) || "";
