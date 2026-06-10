@@ -25,7 +25,7 @@ export function TabSwitcher<T extends string = string>({
   return (
     <div
       className={cn(
-        "flex bg-black/5 dark:bg-black/20 p-1 rounded-lg border border-premium-border",
+        "inline-flex items-center w-fit max-w-full overflow-x-auto hide-scrollbar bg-black/5 dark:bg-black/20 p-1 rounded-lg border border-premium-border",
         className
       )}
       {...props}
