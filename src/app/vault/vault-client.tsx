@@ -23,6 +23,7 @@ import {
   exportVaultItemsAction,
   bulkCreateVaultItemsAction
 } from "@/lib/actions/vault";
+import { useVault } from "@/components/providers/vault-provider";
 import { verifyCurrentPasswordAction } from "@/lib/actions/users";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -109,18 +110,15 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
 
   const [localItems, setLocalItems] = useState<VaultItemData[]>(initialItems);
   
-  const [masterPassword, setMasterPassword] = useState<string>("");
+  const { masterPassword, setMasterPassword, clearVaultMemory } = useVault();
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [masterPasswordInput, setMasterPasswordInput] = useState("");
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("personalOSVaultKey");
-    if (saved) {
-      setMasterPassword(saved);
-    } else {
+    if (!masterPassword) {
       setIsUnlockModalOpen(true);
     }
-  }, []);
+  }, [masterPassword]);
 
   const { executeAsync: executeVerifyPassword, status: verifyStatus } = useAction(verifyCurrentPasswordAction);
   const [unlockError, setUnlockError] = useState("");
@@ -134,7 +132,6 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
     
     if (res?.data?.success) {
       setMasterPassword(masterPasswordInput);
-      sessionStorage.setItem("personalOSVaultKey", masterPasswordInput);
       setIsUnlockModalOpen(false);
       setMasterPasswordInput("");
     } else {
@@ -153,9 +150,8 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
   }, []);
 
   const lockVault = () => {
-    setMasterPassword("");
+    clearVaultMemory();
     setMasterPasswordInput("");
-    sessionStorage.removeItem("personalOSVaultKey");
     setDecryptedPasswords({});
   };
 

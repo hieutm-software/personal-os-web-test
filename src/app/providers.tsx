@@ -4,6 +4,7 @@ import { AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ReactNode } from "react";
 import { DialogProvider } from "@/components/providers/dialog-provider";
+import { VaultProvider } from "@/components/providers/vault-provider";
 
 // ----------------------------------------------------------------------------
 // TYPES
@@ -32,9 +33,11 @@ export function Providers({ children, messages, locale, timeZone }: ProvidersPro
         enableSystem={true}
         disableTransitionOnChange={true}
       >
-        <DialogProvider>
-          {children}
-        </DialogProvider>
+        <VaultProvider>
+          <DialogProvider>
+            {children}
+          </DialogProvider>
+        </VaultProvider>
       </NextThemesProvider>
     </NextIntlClientProvider>
   );
