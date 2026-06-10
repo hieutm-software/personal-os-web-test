@@ -77,6 +77,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     if (selectedDoc) {
       const updatedDoc = initialDocs.find(d => d.id === selectedDoc.id);
       if (updatedDoc && (updatedDoc.name !== selectedDoc.name || updatedDoc.updatedAt !== selectedDoc.updatedAt)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedDoc(updatedDoc);
       }
     }
@@ -1117,7 +1118,6 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
         submitDisabled={!newFolderName.trim()}
       >
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter a name for the new folder.</p>
             <Input 
               variant="form"
               autoFocus
@@ -1138,7 +1138,6 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
         submitDisabled={!renameFolderName || renameFolderName === folderToRename?.name}
       >
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter a new name for &quot;{folderToRename?.name}&quot;.</p>
             <Input 
               variant="form"
               autoFocus

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
-import { revalidatePath } from "next/cache";
+
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
@@ -106,8 +106,6 @@ export const createEventAction = actionClient
         recurrence: parsedInput.recurrence,
       });
 
-      // Clear Next.js cache for the calendar layout
-      revalidatePath("/calendar");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to create event" };
@@ -146,7 +144,6 @@ export const updateEventAction = actionClient
         return { failure: "Event not found or access denied" };
       }
 
-      revalidatePath("/calendar");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to update event" };
@@ -169,7 +166,6 @@ export const deleteEventAction = actionClient
         return { failure: "Event not found or access denied" };
       }
 
-      revalidatePath("/calendar");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete event" };
@@ -193,7 +189,6 @@ export const bulkDeleteEventsAction = actionClient
         return { failure: "No events found or access denied" };
       }
 
-      revalidatePath("/calendar");
       return { success: true, count: result.length };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk delete events" };

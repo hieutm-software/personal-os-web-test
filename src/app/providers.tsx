@@ -5,6 +5,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ReactNode } from "react";
 import { DialogProvider } from "@/components/providers/dialog-provider";
 import { VaultProvider } from "@/components/providers/vault-provider";
+import { ToastProvider } from "@/components/ui/toast";
 
 // ----------------------------------------------------------------------------
 // TYPES
@@ -35,7 +36,9 @@ export function Providers({ children, messages, locale, timeZone }: ProvidersPro
       >
         <VaultProvider>
           <DialogProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </DialogProvider>
         </VaultProvider>
       </NextThemesProvider>

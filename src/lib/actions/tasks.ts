@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
@@ -54,6 +53,8 @@ async function getAuthenticatedUser() {
 
 // ============================================================================
 // ACTIONS
+// NOTE: revalidatePath removed — optimistic UI keeps state in sync client-side.
+// Server cache is refreshed on next navigation via Next.js default behavior.
 // ============================================================================
 
 export const createTaskAction = actionClient
@@ -70,7 +71,6 @@ export const createTaskAction = actionClient
         }
       }
 
-      // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(tasks).values({
         id: parsedInput.id || crypto.randomUUID(),
         userId: session.userId,
@@ -78,8 +78,6 @@ export const createTaskAction = actionClient
         status: parsedInput.status,
       });
 
-      // Clear Next.js cache to hydrate the UI instantly
-      revalidatePath("/tasks");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to create task" };
@@ -100,19 +98,16 @@ export const updateTaskAction = actionClient
         }
       }
 
-      // STRICT DATA ISOLATION: Enforce userId matching on update mutations
       const result = await db
         .update(tasks)
         .set({ ...updates, updatedAt: new Date().toISOString() })
         .where(and(eq(tasks.id, id), eq(tasks.userId, session.userId)))
         .returning({ updatedId: tasks.id });
 
-      // If length is 0, the task either doesn't exist or belongs to another user
       if (result.length === 0) {
         return { failure: "Task not found or access denied" };
       }
 
-      revalidatePath("/tasks");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to update task" };
@@ -125,18 +120,15 @@ export const deleteTaskAction = actionClient
     try {
       const session = await getAuthenticatedUser();
 
-      // STRICT DATA ISOLATION: Enforce userId matching on deletion mutations
       const result = await db
         .delete(tasks)
         .where(and(eq(tasks.id, id), eq(tasks.userId, session.userId)))
         .returning({ deletedId: tasks.id });
 
-      // Prevent silent failures if malicious delete is attempted across tenants
       if (result.length === 0) {
         return { failure: "Task not found or access denied" };
       }
 
-      revalidatePath("/tasks");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete task" };
@@ -160,7 +152,6 @@ export const bulkDeleteTasksAction = actionClient
         return { failure: "No tasks found or access denied" };
       }
 
-      revalidatePath("/tasks");
       return { success: true, count: result.length };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk delete tasks" };

@@ -48,7 +48,7 @@ async function verifySudo(sudoPasswordPlain: string) {
 // ============================================================================
 
 const createUserSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  username: z.string().min(1, "Username is required").regex(/^[a-zA-Z0-9_]+$/, "Username must contain only English letters, numbers, and underscores without accents or spaces"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["USER", "ADMIN"]),
   sudoPassword: z.string().min(1, "Sudo password is required"),

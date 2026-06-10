@@ -45,6 +45,7 @@
    ───────────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
+    color-scheme: light;
     /* Backgrounds */
     --background: #f8fafc;
     --foreground: #0f172a;
@@ -108,6 +109,7 @@
      DARK THEME — Aura Productivity Aesthetic (Deep Space & Glowing Indigo)
      ───────────────────────────────────────────────────────────────────────────── */
   .dark {
+    color-scheme: dark;
     /* Backgrounds */
     --background: #09090b; /* Deepest black for the outer shell */
     --foreground: #f8fafc;

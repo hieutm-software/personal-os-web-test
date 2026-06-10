@@ -31,7 +31,7 @@ type UserData = {
 };
 
 const createSchema = z.object({
-  username: z.string().min(1, "Required"),
+  username: z.string().min(1, "Required").regex(/^[a-zA-Z0-9_]+$/, "English letters, numbers, underscores only"),
   password: z.string().min(8, "Minimum 8 chars"),
   role: z.enum(["USER", "ADMIN"]),
   sudoPassword: z.string().min(1, "Required"),
@@ -284,30 +284,27 @@ export function AdminDialog({
           <div className="px-6 pb-6 pt-2">
             <form onSubmit={form.handleSubmit(onSubmitCreate)} className="space-y-4">
               <FormField
-                label={t("username")}
                 error={form.formState.errors.username?.message}
               >
                 <Input
                   variant="form"
                   {...form.register("username")}
-                  placeholder="e.g. johndoe"
+                  placeholder={`${t("username")} (e.g. johndoe)`}
                 />
               </FormField>
 
               <FormField
-                label={t("password")}
                 error={form.formState.errors.password?.message}
               >
                 <Input
                   variant="form"
                   type="password"
                   {...form.register("password")}
-                  placeholder="••••••••"
+                  placeholder={t("password")}
                 />
               </FormField>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">{t("role")}</label>
                 <div className="grid grid-cols-2 gap-2 p-1.5 rounded-xl bg-black/10 dark:bg-black/40 border border-premium-border shadow-inner">
                   {(["USER", "ADMIN"] as const).map((role) => (
                     <button
@@ -328,14 +325,13 @@ export function AdminDialog({
 
               <div className="pt-4 mt-2">
                 <FormField
-                  label={t("sudoPassword")}
                   error={form.formState.errors.sudoPassword?.message}
                 >
                   <Input
                     variant="form"
                     type="password"
                     {...form.register("sudoPassword")}
-                    placeholder="Required for security verification"
+                    placeholder={t("sudoPassword")}
                     className="border-indigo-500/20 placeholder:text-indigo-500/30"
                   />
                 </FormField>

@@ -93,9 +93,9 @@ export async function decryptClient(encryptedStr: string, masterPassword: string
 
     const dec = new TextDecoder();
     return dec.decode(decryptedBuffer);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Client decryption failed", e);
-    if (e.message?.includes("WebCrypto API is not available")) {
+    if (e instanceof Error && e.message?.includes("WebCrypto API is not available")) {
       throw e;
     }
     throw new Error("Client decryption failed. Wrong Master Password?");

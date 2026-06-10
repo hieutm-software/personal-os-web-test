@@ -296,7 +296,6 @@ export default function SettingsClient({
                 className="space-y-3.5"
               >
                 <FormField
-                  label={t("currentPassword")}
                   error={form.formState.errors.currentPassword?.message}
                 >
                   <Input
@@ -305,11 +304,11 @@ export default function SettingsClient({
                     id="current-password"
                     type="password"
                     autoComplete="current-password"
+                    placeholder={t("currentPassword")}
                   />
                 </FormField>
 
                 <FormField
-                  label={t("newPassword")}
                   error={form.formState.errors.newPassword?.message}
                 >
                   <Input
@@ -318,11 +317,11 @@ export default function SettingsClient({
                     id="new-password"
                     type="password"
                     autoComplete="new-password"
+                    placeholder={t("newPassword")}
                   />
                 </FormField>
 
                 <FormField
-                  label={t("confirmPassword")}
                   error={form.formState.errors.confirmPassword?.message}
                 >
                   <Input
@@ -331,6 +330,7 @@ export default function SettingsClient({
                     id="confirm-password"
                     type="password"
                     autoComplete="new-password"
+                    placeholder={t("confirmPassword")}
                   />
                 </FormField>
 

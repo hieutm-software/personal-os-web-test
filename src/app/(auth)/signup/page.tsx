@@ -22,7 +22,7 @@ const emailSchema = z.object({
 
 const detailsSchema = z.object({
   otp: z.string().length(6, "OTP must be exactly 6 digits"),
-  username: z.string().min(3, "Username must be at least 3 characters").max(30),
+  username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be at most 20 characters").regex(/^[a-zA-Z0-9_]+$/, "English letters, numbers, underscores only"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -114,15 +114,12 @@ export default function SignupPage() {
         {step === 1 && (
           <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-foreground/90">
-                Email address
-              </label>
               <input
                 {...emailForm.register("email")}
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder="Email address (you@example.com)"
                 className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
               {emailForm.formState.errors.email && (
@@ -162,15 +159,12 @@ export default function SignupPage() {
           <form onSubmit={detailsForm.handleSubmit(onDetailsSubmit)} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
             
             <div className="space-y-1.5">
-              <label htmlFor="otp" className="block text-sm font-medium text-foreground/90">
-                Verification Code
-              </label>
               <input
                 {...detailsForm.register("otp")}
                 id="otp"
                 type="text"
                 maxLength={6}
-                placeholder="000000"
+                placeholder="Verification Code"
                 className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-center text-lg tracking-[0.5em] font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
               {detailsForm.formState.errors.otp && (
@@ -181,15 +175,12 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="username" className="block text-sm font-medium text-foreground/90">
-                Choose a Username
-              </label>
               <input
                 {...detailsForm.register("username")}
                 id="username"
                 type="text"
                 autoComplete="username"
-                placeholder="cooluser123"
+                placeholder="Username (e.g. cooluser123)"
                 className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
               {detailsForm.formState.errors.username && (
@@ -200,15 +191,12 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm font-medium text-foreground/90">
-                Create a Password
-              </label>
               <input
                 {...detailsForm.register("password")}
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                placeholder="••••••••"
+                placeholder="Password"
                 className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
               {detailsForm.formState.errors.password && (

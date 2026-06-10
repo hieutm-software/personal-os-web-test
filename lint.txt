@@ -1,0 +1,167 @@
+
+> personal-os@0.1.0 lint
+> eslint
+
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\(auth)\login\page.tsx
+   4:10  warning  'setLocaleAction' is defined but never used    @typescript-eslint/no-unused-vars
+   6:10  warning  'Monitor' is defined but never used            @typescript-eslint/no-unused-vars
+   6:19  warning  'Moon' is defined but never used               @typescript-eslint/no-unused-vars
+   6:25  warning  'Sun' is defined but never used                @typescript-eslint/no-unused-vars
+   6:30  warning  'Globe' is defined but never used              @typescript-eslint/no-unused-vars
+  23:11  warning  'theme' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  23:18  warning  'setTheme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  24:10  warning  'mounted' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\(auth)\signup\page.tsx
+   4:10  warning  'setLocaleAction' is defined but never used    @typescript-eslint/no-unused-vars
+   6:21  warning  'Globe' is defined but never used              @typescript-eslint/no-unused-vars
+   6:28  warning  'Monitor' is defined but never used            @typescript-eslint/no-unused-vars
+   6:37  warning  'Moon' is defined but never used               @typescript-eslint/no-unused-vars
+   6:43  warning  'Sun' is defined but never used                @typescript-eslint/no-unused-vars
+  34:11  warning  'theme' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  34:18  warning  'setTheme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  35:10  warning  'mounted' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\calendar\calendar-client.tsx
+  23:3   warning  'ChevronDown' is defined but never used      @typescript-eslint/no-unused-vars
+  26:3   warning  'ChevronUp' is defined but never used        @typescript-eslint/no-unused-vars
+  38:40  warning  'useRef' is defined but never used           @typescript-eslint/no-unused-vars
+  90:9   warning  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\dashboard\event-card.tsx
+  5:60  warning  'DialogDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  6:10  warning  'Calendar' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\dashboard\page.tsx
+    4:34  warning  'asc' is defined but never used           @typescript-eslint/no-unused-vars
+    8:3   warning  'CheckCircle2' is defined but never used  @typescript-eslint/no-unused-vars
+   10:3   warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+   11:3   warning  'User' is defined but never used          @typescript-eslint/no-unused-vars
+   17:8   warning  'Link' is defined but never used          @typescript-eslint/no-unused-vars
+   49:12  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  200:53  warning  'i' is defined but never used             @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\documents\documents-client.tsx
+  11:39  warning  'ChevronUp' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  11:50  warning  'ChevronDown' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  24:3   warning  'Dialog' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  25:3   warning  'DialogContent' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  26:3   warning  'DialogDescription' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  27:3   warning  'DialogFooter' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  28:3   warning  'DialogHeader' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  29:3   warning  'DialogTitle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  80:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\documents\documents-client.tsx:80:9
+  78 |       const updatedDoc = initialDocs.find(d => d.id === selectedDoc.id);
+  79 |       if (updatedDoc && (updatedDoc.name !== selectedDoc.name || updatedDoc.updatedAt !== selectedDoc.updatedAt)) {
+> 80 |         setSelectedDoc(updatedDoc);
+     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  81 |       }
+  82 |     }
+  83 |   }, [initialDocs, selectedDoc]);  react-hooks/set-state-in-effect
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\notes\notes-client.tsx
+   40:3   warning  'ChevronDown' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   41:3   warning  'ChevronUp' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  173:11  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\notes\notes-client.tsx:173:11
+  171 |         try {
+  172 |           const parsed = JSON.parse(savedDraft);
+> 173 |           setLocalTitle(parsed.title);
+      |           ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  174 |           setLocalContent(parsed.content);
+  175 |         } catch {
+  176 |           setLocalTitle(activeNote.title);  react-hooks/set-state-in-effect
+  272:33  warning  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  287:6   warning  React Hook useEffect has missing dependencies: 'handleLocalSave' and 'syncToDatabase'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\page.tsx
+  9:11  warning  'theme' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  9:18  warning  'setTheme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\settings\page.tsx
+  21:8  warning  'SessionItem' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\settings\settings-client.tsx
+    4:10  warning  'setLocaleAction' is defined but never used        @typescript-eslint/no-unused-vars
+   14:3   warning  'LogOut' is defined but never used                 @typescript-eslint/no-unused-vars
+   21:3   warning  'Globe' is defined but never used                  @typescript-eslint/no-unused-vars
+   67:3   warning  'allUsers' is defined but never used               @typescript-eslint/no-unused-vars
+   69:3   warning  'currentUserId' is defined but never used          @typescript-eslint/no-unused-vars
+   80:9   warning  'locale' is assigned a value but never used        @typescript-eslint/no-unused-vars
+   83:10  warning  'isLoggingOut' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  130:20  warning  'error' is defined but never used                  @typescript-eslint/no-unused-vars
+  166:14  warning  'e' is defined but never used                      @typescript-eslint/no-unused-vars
+  173:9   warning  'handleLogout' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\tasks\tasks-client.tsx
+  156:26  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\tasks\tasks-client.tsx:156:26
+  154 |   // ── VIRTUALIZATION ────────────────────────────────────────────────────────
+  155 |   const parentRef = useRef<HTMLDivElement>(null);
+> 156 |   const rowVirtualizer = useVirtualizer({
+      |                          ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  157 |     count: sortedAndFilteredTasks.length,
+  158 |     getScrollElement: () => parentRef.current,
+  159 |     estimateSize: () => 53, // Approx height of a row  react-hooks/incompatible-library
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\vault\vault-client.tsx
+  192:6   warning  React Hook useEffect has a missing dependency: 'lockVault'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+  212:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  308:23  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  343:25  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  521:24  warning  'setSelectedIds' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  525:26  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\app\vault\vault-client.tsx:525:26
+  523 |   // ── VIRTUALIZATION ────────────────────────────────────────────────────────
+  524 |   const parentRef = useRef<HTMLDivElement>(null);
+> 525 |   const rowVirtualizer = useVirtualizer({
+      |                          ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  526 |     count: sortedAndFilteredItems.length,
+  527 |     getScrollElement: () => parentRef.current,
+  528 |     estimateSize: () => 53, // Approx row height  react-hooks/incompatible-library
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\components\ui\time-picker.tsx
+  36:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\components\ui\time-picker.tsx:36:9
+  34 |       const [h, m] = value.split(":");
+  35 |       if (h && m) {
+> 36 |         setHour(h);
+     |         ^^^^^^^ Avoid calling setState() directly within an effect
+  37 |         setMinute(m);
+  38 |       }
+  39 |     } else {  react-hooks/set-state-in-effect
+
+C:\Users\Hieu\Documents\personal-os-workspace\personal-os\src\lib\crypto-client.ts
+  96:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 65 problems (7 errors, 58 warnings)
+

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { notes } from "@/lib/db/schema";
 import { and, eq, inArray, isNotNull, isNull, like } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
-import { revalidatePath } from "next/cache";
+
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
@@ -103,7 +103,6 @@ export const createNoteAction = actionClient
         })
         .returning({ id: notes.id });
 
-      revalidatePath("/notes");
       return { success: true, noteId: newNote.id };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to create note" };
@@ -135,7 +134,6 @@ export const updateNoteAction = actionClient
         return { failure: "Note not found or access denied" };
       }
 
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to save note" };
@@ -159,7 +157,6 @@ export const deleteNoteAction = actionClient
         return { failure: "Note not found or access denied" };
       }
 
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete note" };
@@ -182,7 +179,6 @@ export const restoreNoteAction = actionClient
         return { failure: "Note not found or access denied" };
       }
 
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to restore note" };
@@ -204,7 +200,6 @@ export const permanentDeleteNoteAction = actionClient
         return { failure: "Note not found or access denied" };
       }
 
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete note" };
@@ -226,7 +221,6 @@ export const emptyTrashAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to empty trash" };
@@ -249,7 +243,6 @@ export const deleteAllNotesAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete all notes" };
@@ -274,7 +267,6 @@ export const bulkDeleteNotesAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk delete notes" };
@@ -296,7 +288,6 @@ export const restoreAllNotesAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to restore all notes" };
@@ -320,7 +311,6 @@ export const bulkRestoreNotesAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk restore notes" };
@@ -343,7 +333,6 @@ export const bulkPermanentDeleteNotesAction = actionClient
           )
         );
       
-      revalidatePath("/notes");
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk permanently delete notes" };

@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+
 import { checkNeonQuota } from "./quota";
 
 const actionClient = createSafeActionClient();
@@ -88,7 +88,6 @@ export const createVaultItemAction = actionClient
       note,
     });
 
-    revalidatePath("/vault");
     return { success: true };
   });
 
@@ -103,7 +102,6 @@ export const deleteVaultItemAction = actionClient
     if (!session) return { failure: "Unauthorized" };
 
     await db.delete(vault).where(and(eq(vault.id, id), eq(vault.userId, session.userId)));
-    revalidatePath("/vault");
     return { success: true };
   });
 
@@ -148,7 +146,6 @@ export const updateVaultItemAction = actionClient
       .set(updateData)
       .where(and(eq(vault.id, id), eq(vault.userId, session.userId)));
 
-    revalidatePath("/vault");
     return { success: true };
   });
 
@@ -184,7 +181,6 @@ export const bulkDeleteVaultItemsAction = actionClient
     const { inArray } = await import("drizzle-orm");
 
     await db.delete(vault).where(and(inArray(vault.id, ids), eq(vault.userId, session.userId)));
-    revalidatePath("/vault");
     return { success: true };
   });
 
@@ -254,7 +250,6 @@ export const bulkCreateVaultItemsAction = actionClient
     }));
 
     await db.insert(vault).values(insertData);
-    revalidatePath("/vault");
     return { success: true };
   });
 
@@ -308,6 +303,5 @@ export const bulkUpdateVaultPasswordsAction = actionClient
       }
     });
 
-    revalidatePath("/vault");
     return { success: true };
   });

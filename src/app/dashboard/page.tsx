@@ -19,6 +19,7 @@ import { redirect } from "next/navigation";
 import WeatherClockCard from "@/components/weather-clock-card";
 import { GlobalSearchTrigger } from "@/components/ui/global-search-trigger";
 import { UserMenu } from "./user-menu";
+import { EventCard } from "./event-card";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -97,8 +98,7 @@ export default async function DashboardPage() {
     .select()
     .from(events)
     .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso)))
-    .orderBy(asc(events.startTime))
-    .limit(3);
+    .orderBy(desc(events.createdAt));
 
   return (
     <div className="flex flex-col gap-4 max-w-[1400px] mx-auto w-full h-full overflow-hidden p-4 md:p-6">
@@ -197,35 +197,9 @@ export default async function DashboardPage() {
                 {upcomingEventsDetails.length === 0 ? (
                   <p className="text-sm text-zinc-500 text-center py-4">No upcoming events.</p>
                 ) : (
-                  upcomingEventsDetails.map((event, i) => {
-                    const startDate = new Date(event.startTime!);
-                    return (
-                      <div key={event.id} className="flex gap-4 group cursor-pointer items-start" suppressHydrationWarning>
-                        <div className="w-12 h-12 rounded-xl bg-indigo-500/5 dark:bg-premium-dark border border-indigo-500/20 dark:border-premium-border flex flex-col items-center justify-center shrink-0 shadow-sm">
-                          <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 leading-none mb-1">
-                            {startDate.toLocaleDateString('en-US', { month: 'short' })}
-                          </span>
-                          <span className="text-lg font-black leading-none text-premium-text">
-                            {startDate.getDate()}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-1 w-full justify-center min-h-[3rem]">
-                          <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
-                            {event.title || "Untitled Event"}
-                          </h3>
-                          <div className="text-xs text-zinc-500 flex items-center gap-2">
-                            <span>{startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            {event.endTime && (
-                              <>
-                                <span>-</span>
-                                <span>{new Date(event.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  upcomingEventsDetails.map((event, i) => (
+                    <EventCard key={event.id} event={event} />
+                  ))
                 )}
               </div>
             </div>

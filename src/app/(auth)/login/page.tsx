@@ -59,18 +59,12 @@ export default function LoginPage() {
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-1.5">
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-foreground/90"
-            >
-              Username
-            </label>
             <input
               {...form.register("username")}
               id="username"
               type="text"
               autoComplete="username"
-              placeholder="Enter your username"
+              placeholder="Username"
               className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
             {form.formState.errors.username && (
@@ -81,18 +75,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-foreground/90"
-            >
-              Password
-            </label>
             <input
               {...form.register("password")}
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="Password"
               className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
             {form.formState.errors.password && (
