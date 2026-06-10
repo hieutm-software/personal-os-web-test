@@ -52,7 +52,10 @@ export function EventCard({ event }: { event: Event }) {
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[600px] w-11/12 max-h-[85vh] overflow-y-auto bg-premium-dark border-premium-border shadow-2xl backdrop-blur-xl">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="sm:max-w-[600px] w-11/12 max-h-[85vh] overflow-y-auto bg-premium-dark border-premium-border shadow-2xl backdrop-blur-xl"
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-premium-text break-words break-all pr-8">
               {event.title || "Untitled Event"}
