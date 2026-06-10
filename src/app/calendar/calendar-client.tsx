@@ -59,6 +59,8 @@ import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, Tab
 const createEventSchema = z.object({
   title: z.string().min(1, "Required"),
   description: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
 });
 
 type CreateEventForm = z.infer<typeof createEventSchema>;
@@ -138,6 +140,8 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     defaultValues: {
       title: "",
       description: "",
+      startTime: "",
+      endTime: "",
     },
   });
 
@@ -146,25 +150,40 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
 
   const onSubmit = (data: CreateEventForm) => {
     const fallbackDateStr = listFilterDate || selectedDateStr || format(new Date(), "yyyy-MM-dd");
-    const defaultIso = `${fallbackDateStr}T00:00:00.000Z`;
+    
+    let startIso = `${fallbackDateStr}T00:00:00.000Z`;
+    let endIso = `${fallbackDateStr}T00:00:00.000Z`;
+    
+    if (data.startTime) {
+      const d = parseISO(fallbackDateStr);
+      const [h, m] = data.startTime.split(":");
+      d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+      startIso = d.toISOString();
+    }
+    if (data.endTime) {
+      const d = parseISO(fallbackDateStr);
+      const [h, m] = data.endTime.split(":");
+      d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+      endIso = d.toISOString();
+    }
 
     if (editingEvent) {
-      setLocalEvents((prev) => prev.map((e) => e.id === editingEvent.id ? { ...e, title: data.title, description: data.description ?? null, startTime: editingEvent.startTime ? new Date(editingEvent.startTime).toISOString() : defaultIso, endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso } : e));
+      setLocalEvents((prev) => prev.map((e) => e.id === editingEvent.id ? { ...e, title: data.title, description: data.description ?? null, startTime: startIso, endTime: endIso } : e));
       queueUpdate(editingEvent.id, {
         title: data.title,
         description: data.description ?? null,
-        startTime: editingEvent.startTime ? new Date(editingEvent.startTime).toISOString() : defaultIso,
-        endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso,
+        startTime: startIso,
+        endTime: endIso,
       });
     } else {
       const newId = generateUUID();
-      setLocalEvents((prev) => [{ id: newId, title: data.title, description: data.description ?? null, startTime: defaultIso, endTime: defaultIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
+      setLocalEvents((prev) => [{ id: newId, title: data.title, description: data.description ?? null, startTime: startIso, endTime: endIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
       execCreate({
         id: newId,
         title: data.title,
         description: data.description ?? null,
-        startTime: defaultIso,
-        endTime: defaultIso,
+        startTime: startIso,
+        endTime: endIso,
       });
     }
 
@@ -172,7 +191,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     setEditingEvent(null);
     setIsCreateEventDialogOpen(false);
     setViewMode("list");
-    form.reset({ title: "", description: "" });
+    form.reset({ title: "", description: "", startTime: "", endTime: "" });
   };
 
   // Auto-reset form on success (removed router.refresh() to preserve cache)
@@ -187,6 +206,8 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     form.reset({
       title: event.title,
       description: event.description || "",
+      startTime: event.startTime ? format(new Date(event.startTime), "HH:mm") : "",
+      endTime: event.endTime ? format(new Date(event.endTime), "HH:mm") : "",
     });
     setViewMode("list");
     setIsCreateEventDialogOpen(true);
@@ -665,7 +686,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
           setIsCreateEventDialogOpen(open);
           if (!open) {
             setEditingEvent(null);
-            form.reset({ title: "", description: "" });
+            form.reset({ title: "", description: "", startTime: "", endTime: "" });
             setViewMode("list");
           }
         }}
@@ -686,6 +707,25 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
               {form.formState.errors.title && (
                 <p className="text-xs text-destructive px-1">{form.formState.errors.title.message}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider pl-1">Start Time</label>
+                <Input
+                  variant="form"
+                  type="time"
+                  {...form.register("startTime")}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider pl-1">End Time</label>
+                <Input
+                  variant="form"
+                  type="time"
+                  {...form.register("endTime")}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
