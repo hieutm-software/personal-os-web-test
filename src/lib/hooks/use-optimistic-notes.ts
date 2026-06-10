@@ -1,7 +1,8 @@
 "use client";
 
 import { Note } from "@/lib/db/schema";
-import { useOptimistic, useCallback, startTransition } from "react";
+import { useOptimistic, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
 export type OptimisticNoteAction =
@@ -49,6 +50,8 @@ function optimisticReducer(state: Note[], action: OptimisticNoteAction): Note[] 
 
 export function useOptimisticNotes(serverNotes: Note[]) {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [optimisticNotes, dispatchOptimistic] = useOptimistic(
     serverNotes,
@@ -56,24 +59,27 @@ export function useOptimisticNotes(serverNotes: Note[]) {
   );
 
   const mutate = useCallback(
-    async <TResult extends { failure?: string; success?: unknown }>(
+    <TResult extends { failure?: string; success?: unknown }>(
       optimisticAction: OptimisticNoteAction,
-      serverAction: () => Promise<TResult | undefined>
+      serverAction: () => Promise<TResult | undefined>,
+      options?: { skipRefresh?: boolean }
     ) => {
-      startTransition(() => {
+      startTransition(async () => {
         dispatchOptimistic(optimisticAction);
-      });
-      try {
-        const result = await serverAction();
-        if (result?.failure) {
-          toast(result.failure, "error");
+        try {
+          const result = await serverAction();
+          if (result?.failure) {
+            toast(result.failure, "error");
+          } else if (!options?.skipRefresh) {
+            router.refresh();
+          }
+        } catch {
+          toast("An unexpected error occurred. Changes have been reverted.", "error");
         }
-      } catch {
-        toast("An unexpected error occurred. Changes have been reverted.", "error");
-      }
+      });
     },
-    [dispatchOptimistic, toast]
+    [dispatchOptimistic, toast, startTransition, router]
   );
 
-  return { optimisticNotes, mutate };
+  return { optimisticNotes, mutate, isPending };
 }

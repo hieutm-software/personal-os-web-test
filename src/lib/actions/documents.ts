@@ -36,6 +36,21 @@ const extractSupabasePath = (url: string) => {
   return null;
 };
 
+// ---------------------------------------------------------------------------
+// Wraps any promise with a hard timeout to prevent Supabase calls from
+// hanging indefinitely if the storage service is slow or unreachable.
+// ---------------------------------------------------------------------------
+const SUPABASE_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number = SUPABASE_TIMEOUT_MS): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Storage request timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 export const getUploadUrlAction = actionClient
   .schema(z.object({
     name: z.string().min(1),
@@ -72,9 +87,11 @@ export const getUploadUrlAction = actionClient
       const uniqueFilename = `${Date.now()}_${uuidv4()}${ext}`;
       const supabasePath = `${session.userId}/${uniqueFilename}`;
 
-      const { data, error } = await supabase.storage
-        .from("personal-os-bucket")
-        .createSignedUploadUrl(supabasePath);
+      const { data, error } = await withTimeout(
+        supabase.storage
+          .from("personal-os-bucket")
+          .createSignedUploadUrl(supabasePath)
+      );
 
       if (error || !data) {
         console.error("Supabase signed URL error:", error);
@@ -143,9 +160,10 @@ export const deleteDocumentAction = actionClient
     
     if (!doc) return { failure: "Not found" };
 
+    // Defense-in-depth: bind userId even though ownership was checked above.
     await db.update(documents)
       .set({ deletedAt: new Date().toISOString() })
-      .where(eq(documents.id, id));
+      .where(and(eq(documents.id, id), eq(documents.userId, session.userId)));
     revalidatePath("/documents");
     return { success: true };
   });
@@ -275,12 +293,14 @@ export const updateDocumentContentAction = actionClient
       const buffer = Buffer.from(content, "utf-8");
 
       if (supabasePath) {
-        const { error } = await supabase.storage
-          .from("personal-os-bucket")
-          .upload(supabasePath, buffer, {
-            contentType: doc.mimeType,
-            upsert: true,
-          });
+        const { error } = await withTimeout(
+          supabase.storage
+            .from("personal-os-bucket")
+            .upload(supabasePath, buffer, {
+              contentType: doc.mimeType,
+              upsert: true,
+            })
+        );
         if (error) {
           console.error("Supabase update error:", error);
           return { failure: "Failed to update document content in storage" };
@@ -293,12 +313,13 @@ export const updateDocumentContentAction = actionClient
         }
       }
 
+      // Defense-in-depth: bind userId even though ownership was checked above.
       await db.update(documents)
-        .set({ 
+        .set({
           sizeBytes: buffer.length,
-          updatedAt: new Date().toISOString() 
+          updatedAt: new Date().toISOString(),
         })
-        .where(eq(documents.id, id));
+        .where(and(eq(documents.id, id), eq(documents.userId, session.userId)));
 
       revalidatePath("/documents");
       return { success: true, newSize: buffer.length };
@@ -364,7 +385,7 @@ export const permanentlyDeleteDocumentsAction = actionClient
       try {
         const supabasePath = extractSupabasePath(doc.url);
         if (supabasePath) {
-          await supabase.storage.from("personal-os-bucket").remove([supabasePath]);
+          await withTimeout(supabase.storage.from("personal-os-bucket").remove([supabasePath]));
         } else {
           const filename = path.basename(doc.url);
           const filePath = path.join(process.cwd(), "public", "uploads", "documents", filename);
@@ -400,7 +421,7 @@ export const permanentlyDeleteFoldersAction = actionClient
       try {
         const supabasePath = extractSupabasePath(doc.url);
         if (supabasePath) {
-          await supabase.storage.from("personal-os-bucket").remove([supabasePath]);
+          await withTimeout(supabase.storage.from("personal-os-bucket").remove([supabasePath]));
         } else {
           const filename = path.basename(doc.url);
           const filePath = path.join(process.cwd(), "public", "uploads", "documents", filename);
@@ -434,7 +455,7 @@ export const emptyDocumentsTrashAction = actionClient
       try {
         const supabasePath = extractSupabasePath(doc.url);
         if (supabasePath) {
-          await supabase.storage.from("personal-os-bucket").remove([supabasePath]);
+          await withTimeout(supabase.storage.from("personal-os-bucket").remove([supabasePath]));
         } else {
           const filename = path.basename(doc.url);
           const filePath = path.join(process.cwd(), "public", "uploads", "documents", filename);

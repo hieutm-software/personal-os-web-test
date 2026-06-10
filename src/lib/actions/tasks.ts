@@ -3,7 +3,7 @@
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -18,13 +18,13 @@ const actionClient = createSafeActionClient();
 
 const createTaskSchema = z.object({
   id: z.string().uuid().optional(),
-  title: z.string().min(1, "Title is required"),
+  title: z.string().trim().min(1, "Title is required").max(500, "Title too long"),
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).default("PENDING"),
 });
 
 const updateTaskSchema = z.object({
   id: z.string().uuid(),
-  title: z.string().min(1, "Title is required").optional(),
+  title: z.string().trim().min(1, "Title is required").max(500, "Title too long").optional(),
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).optional(),
 });
 
@@ -140,9 +140,7 @@ export const bulkDeleteTasksAction = actionClient
   .action(async ({ parsedInput: { ids } }) => {
     try {
       const session = await getAuthenticatedUser();
-      
-      const { inArray } = await import("drizzle-orm");
-      
+
       const result = await db
         .delete(tasks)
         .where(and(inArray(tasks.id, ids), eq(tasks.userId, session.userId)))

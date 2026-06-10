@@ -111,8 +111,8 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
   };
 
   // ── SERVER ACTIONS (background) ───────────────────────────────────────────
-  const { executeAsync: execCreate } = useAction(createEventAction);
-  const { executeAsync: execUpdate } = useAction(updateEventAction);
+  const { executeAsync: execCreate, isExecuting: isCreating } = useAction(createEventAction);
+  const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateEventAction);
   const { executeAsync: execDelete } = useAction(deleteEventAction);
   const { executeAsync: execBulkDelete } = useAction(bulkDeleteEventsAction);
 
@@ -521,7 +521,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             }}
             title={editingEvent ? "Edit Event" : t("createEvent")}
             onSubmit={form.handleSubmit(onSubmit)}
-            isSubmitting={false}
+            isSubmitting={editingEvent ? isUpdating : isCreating}
             submitText={editingEvent ? "Save" : t("add")}
           >
             <div className="space-y-2">

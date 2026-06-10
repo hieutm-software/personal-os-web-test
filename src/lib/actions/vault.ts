@@ -7,7 +7,7 @@ import { createSafeActionClient } from "next-safe-action";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import crypto from "crypto";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 import { checkNeonQuota } from "./quota";
 
@@ -56,10 +56,10 @@ function decryptPassword(encryptedStr: string): string {
 export const createVaultItemAction = actionClient
   .schema(z.object({
     id: z.string().uuid().optional(),
-    platform: z.string().min(1),
-    username: z.string().min(1),
-    password: z.string().min(1),
-    note: z.string().optional(),
+    platform: z.string().trim().min(1, "Platform is required").max(200, "Platform name too long"),
+    username: z.string().trim().min(1, "Username is required").max(200, "Username too long"),
+    password: z.string().min(1, "Password is required").max(10_000, "Password too long"),
+    note: z.string().trim().max(5_000, "Note too long").optional(),
   }))
   .action(async ({ parsedInput: { id, platform, username, password, note } }) => {
     const cookieStore = await cookies();
@@ -107,11 +107,11 @@ export const deleteVaultItemAction = actionClient
 
 export const updateVaultItemAction = actionClient
   .schema(z.object({
-    id: z.string(),
-    platform: z.string().min(1).optional(),
-    username: z.string().min(1).optional(),
-    password: z.string().optional(),
-    note: z.string().optional().nullable(),
+    id: z.string().uuid(),
+    platform: z.string().trim().min(1).max(200, "Platform name too long").optional(),
+    username: z.string().trim().min(1).max(200, "Username too long").optional(),
+    password: z.string().max(10_000, "Password too long").optional(),
+    note: z.string().trim().max(5_000, "Note too long").optional().nullable(),
   }))
   .action(async ({ parsedInput: { id, platform, username, password, note } }) => {
     const cookieStore = await cookies();
@@ -178,8 +178,6 @@ export const bulkDeleteVaultItemsAction = actionClient
     const session = await verifySessionToken(token);
     if (!session) return { failure: "Unauthorized" };
 
-    const { inArray } = await import("drizzle-orm");
-
     await db.delete(vault).where(and(inArray(vault.id, ids), eq(vault.userId, session.userId)));
     return { success: true };
   });
@@ -194,10 +192,8 @@ export const exportVaultItemsAction = actionClient
     const session = await verifySessionToken(token);
     if (!session) return { failure: "Unauthorized" };
 
-    const { inArray } = await import("drizzle-orm");
-
     let query = db.select().from(vault).where(eq(vault.userId, session.userId));
-    
+
     if (ids.length > 0) {
       query = db.select().from(vault).where(and(inArray(vault.id, ids), eq(vault.userId, session.userId)));
     }

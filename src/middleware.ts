@@ -38,8 +38,8 @@ export async function middleware(request: NextRequest) {
   // 2. Unauthenticated state handling
   if (!payload) {
     if (!isPublicRoute) {
-      // Redirect to login if attempting to access a protected route
-      const redirectUrl = new URL("/login", request.url);
+      // Redirect to landing page if attempting to access a protected route
+      const redirectUrl = new URL("/", request.url);
       const response = NextResponse.redirect(redirectUrl);
 
       // If a token existed but failed verification (expired/tampered), purge it

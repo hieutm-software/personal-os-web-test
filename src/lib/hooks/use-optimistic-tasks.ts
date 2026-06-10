@@ -1,7 +1,8 @@
 "use client";
 
 import { Task } from "@/lib/db/schema";
-import { useOptimistic, useCallback, startTransition } from "react";
+import { useOptimistic, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,6 +42,8 @@ function optimisticReducer(state: Task[], action: OptimisticAction): Task[] {
 
 export function useOptimisticTasks(serverTasks: Task[]) {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [optimisticTasks, dispatchOptimistic] = useOptimistic(
     serverTasks,
@@ -48,35 +51,34 @@ export function useOptimisticTasks(serverTasks: Task[]) {
   );
 
   /**
-   * Dispatches an optimistic update immediately, then runs the async server
-   * action. If the action returns a `failure`, rolls back by re-dispatching
-   * the inverse and shows an error toast.
+   * Wraps optimistic dispatch + server action inside a single async
+   * startTransition so useOptimistic keeps the optimistic state visible
+   * for the entire round-trip (React 19 async transitions).
    */
   const mutate = useCallback(
-    async <TResult extends { failure?: string; success?: unknown }>(
+    <TResult extends { failure?: string; success?: unknown }>(
       optimisticAction: OptimisticAction,
       serverAction: () => Promise<TResult | undefined>,
-      rollbackAction?: OptimisticAction
     ) => {
-      // 1. Instant optimistic update (0ms)
-      startTransition(() => {
+      startTransition(async () => {
         dispatchOptimistic(optimisticAction);
-      });
-
-      // 2. Background server action
-      try {
-        const result = await serverAction();
-        if (result?.failure) {
-          // 3a. Rollback: useOptimistic auto-reverts when React re-renders
-          //    with the unchanged server state. We also show a toast.
-          toast(result.failure, "error");
+        try {
+          const result = await serverAction();
+          if (result?.failure) {
+            toast(result.failure, "error");
+          } else {
+            // router.refresh() inside the transition keeps useOptimistic showing
+            // the optimistic state until the RSC server component re-renders
+            // with the new DB data from revalidatePath.
+            router.refresh();
+          }
+        } catch {
+          toast("An unexpected error occurred. Changes have been reverted.", "error");
         }
-      } catch {
-        toast("An unexpected error occurred. Changes have been reverted.", "error");
-      }
+      });
     },
-    [dispatchOptimistic, toast]
+    [dispatchOptimistic, toast, startTransition, router]
   );
 
-  return { optimisticTasks, mutate };
+  return { optimisticTasks, mutate, isPending };
 }

@@ -3,9 +3,8 @@
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
-
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
@@ -17,12 +16,11 @@ import crypto from "crypto";
 
 const actionClient = createSafeActionClient();
 
-// Support standard recurrence strings (e.g., RRULE: FREQ=WEEKLY;BYDAY=MO,WE,FR)
 const createEventSchema = z
   .object({
     id: z.string().uuid().optional(),
-    title: z.string().min(1, "Title is required"),
-    description: z.string().optional().nullable(),
+    title: z.string().trim().min(1, "Title is required").max(500, "Title too long"),
+    description: z.string().trim().max(2000, "Description too long").optional().nullable(),
     startTime: z
       .string()
       .datetime("Start time must be a valid ISO 8601 UTC date")
@@ -33,25 +31,28 @@ const createEventSchema = z
       .datetime("End time must be a valid ISO 8601 UTC date")
       .optional()
       .nullable(),
-    recurrence: z.string().optional().nullable(),
+    recurrence: z.string().max(500).optional().nullable(),
   })
-  .refine((data) => {
-    if (data.startTime && data.endTime) {
-      return new Date(data.startTime) <= new Date(data.endTime);
+  .refine(
+    (data) => {
+      if (data.startTime && data.endTime) {
+        return new Date(data.startTime) <= new Date(data.endTime);
+      }
+      return true;
+    },
+    {
+      message: "End time cannot be earlier than start time",
+      path: ["endTime"],
     }
-    return true;
-  }, {
-    message: "End time cannot be earlier than start time",
-    path: ["endTime"],
-  });
+  );
 
 const updateEventSchema = z.object({
   id: z.string().uuid(),
-  title: z.string().min(1, "Title is required").optional(),
-  description: z.string().optional().nullable(),
+  title: z.string().trim().min(1, "Title is required").max(500, "Title too long").optional(),
+  description: z.string().trim().max(2000, "Description too long").optional().nullable(),
   startTime: z.string().datetime().optional().nullable(),
   endTime: z.string().datetime().optional().nullable(),
-  recurrence: z.string().optional().nullable(),
+  recurrence: z.string().max(500).optional().nullable(),
 });
 
 const deleteEventSchema = z.object({
@@ -95,7 +96,6 @@ export const createEventAction = actionClient
         }
       }
 
-      // INSERT: Automatically bound to the authenticated user's ID
       await db.insert(events).values({
         id: parsedInput.id || crypto.randomUUID(),
         userId: session.userId,
@@ -177,9 +177,7 @@ export const bulkDeleteEventsAction = actionClient
   .action(async ({ parsedInput: { ids } }) => {
     try {
       const session = await getAuthenticatedUser();
-      
-      const { inArray } = await import("drizzle-orm");
-      
+
       const result = await db
         .delete(events)
         .where(and(inArray(events.id, ids), eq(events.userId, session.userId)))

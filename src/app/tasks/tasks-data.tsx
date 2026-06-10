@@ -18,11 +18,19 @@ export async function TasksData() {
   const session = await verifySessionToken(token);
   if (!session) redirect("/login");
 
+  // Explicit column selection — omits `userId` which is not needed on the client.
   const userTasks = await db
-    .select()
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      status: tasks.status,
+      createdAt: tasks.createdAt,
+      updatedAt: tasks.updatedAt,
+    })
     .from(tasks)
     .where(eq(tasks.userId, session.userId))
     .orderBy(desc(tasks.createdAt));
 
-  return <TasksClient initialTasks={userTasks} />;
+  // Cast: client receives full Task shape minus userId (unused in UI)
+  return <TasksClient initialTasks={userTasks as Parameters<typeof TasksClient>[0]["initialTasks"]} />;
 }

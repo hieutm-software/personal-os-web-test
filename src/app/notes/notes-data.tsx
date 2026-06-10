@@ -14,11 +14,20 @@ export async function NotesData() {
   const session = await verifySessionToken(token);
   if (!session) redirect("/login");
 
+  // Explicit column selection — omits `userId` which is not needed on the client.
   const userNotes = await db
-    .select()
+    .select({
+      id: notes.id,
+      title: notes.title,
+      content: notes.content,
+      createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
+      deletedAt: notes.deletedAt,
+    })
     .from(notes)
     .where(eq(notes.userId, session.userId))
     .orderBy(desc(notes.updatedAt));
 
-  return <NotesClient initialNotes={userNotes} />;
+  // Cast: client receives full Note shape minus userId (unused in UI)
+  return <NotesClient initialNotes={userNotes as Parameters<typeof NotesClient>[0]["initialNotes"]} />;
 }

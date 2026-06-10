@@ -249,7 +249,7 @@ export default async function DashboardPage() {
               </div>
               <div className="relative z-10 mt-auto">
                 <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium mb-1">Network & API</p>
-                <p className="text-xl font-semibold tracking-tight text-white">Connected</p>
+                <p className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">Connected</p>
                 <p className="text-xs text-zinc-500 mt-1">Neon DB Server Ping</p>
               </div>
             </div>

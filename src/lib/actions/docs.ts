@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { notes } from "@/lib/db/schema";
 import { and, eq, inArray, isNotNull, isNull, like } from "drizzle-orm";
 import { createSafeActionClient } from "next-safe-action";
-
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
@@ -14,18 +13,20 @@ const actionClient = createSafeActionClient();
 
 // ============================================================================
 // SCHEMAS
+// Max sizes: title 500 chars, content 500KB (500_000 chars). These act as
+// a hard server-side guard before data ever reaches the database.
 // ============================================================================
 
 const createNoteSchema = z.object({
   id: z.string().uuid().optional(),
-  title: z.string().optional(),
-  content: z.string().default(""), // Can store Text, JSON, or Markdown
+  title: z.string().trim().max(500, "Title too long").optional(),
+  content: z.string().max(500_000, "Content too large").default(""),
 });
 
 const updateNoteSchema = z.object({
   id: z.string().uuid(),
-  title: z.string().optional(),
-  content: z.string().optional(),
+  title: z.string().trim().max(500, "Title too long").optional(),
+  content: z.string().max(500_000, "Content too large").optional(),
 });
 
 const deleteNoteSchema = z.object({
@@ -214,13 +215,8 @@ export const emptyTrashAction = actionClient
       // Delete all soft-deleted notes for this user
       await db
         .delete(notes)
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            isNotNull(notes.deletedAt)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), isNotNull(notes.deletedAt)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to empty trash" };
@@ -236,13 +232,8 @@ export const deleteAllNotesAction = actionClient
       await db
         .update(notes)
         .set({ deletedAt: new Date().toISOString() })
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            isNull(notes.deletedAt)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), isNull(notes.deletedAt)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to delete all notes" };
@@ -260,13 +251,8 @@ export const bulkDeleteNotesAction = actionClient
       await db
         .update(notes)
         .set({ deletedAt: new Date().toISOString() })
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            inArray(notes.id, ids)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), inArray(notes.id, ids)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk delete notes" };
@@ -281,13 +267,8 @@ export const restoreAllNotesAction = actionClient
       await db
         .update(notes)
         .set({ deletedAt: null })
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            isNotNull(notes.deletedAt)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), isNotNull(notes.deletedAt)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to restore all notes" };
@@ -304,13 +285,8 @@ export const bulkRestoreNotesAction = actionClient
       await db
         .update(notes)
         .set({ deletedAt: null })
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            inArray(notes.id, ids)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), inArray(notes.id, ids)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk restore notes" };
@@ -326,13 +302,8 @@ export const bulkPermanentDeleteNotesAction = actionClient
 
       await db
         .delete(notes)
-        .where(
-          and(
-            eq(notes.userId, session.userId),
-            inArray(notes.id, ids)
-          )
-        );
-      
+        .where(and(eq(notes.userId, session.userId), inArray(notes.id, ids)));
+
       return { success: true };
     } catch (error) {
       return { failure: error instanceof Error ? error.message : "Failed to bulk permanently delete notes" };

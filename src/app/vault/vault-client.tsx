@@ -43,7 +43,8 @@ import {
   Clock,
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useState, useRef, useMemo, useCallback, useOptimistic, startTransition } from "react";
+import { useState, useRef, useMemo, useCallback, useOptimistic, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { SearchBar } from "@/components/ui/search-bar";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ type SortDirection = "asc" | "desc";
 export default function VaultClient({ initialItems }: { initialItems: VaultItemData[] }) {
   const { alert, confirm } = useDialogs();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<VaultItemData | null>(null);
@@ -121,25 +123,30 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
     }
   );
 
+  const [isPending, startTransition] = useTransition();
+
   const mutate = useCallback(
-    async <TResult extends { failure?: string; success?: unknown }>(
+    <TResult extends { failure?: string; success?: unknown }>(
       optimisticAction: OptimisticVaultAction,
       serverAction: () => Promise<TResult | undefined>
     ) => {
-      startTransition(() => { dispatchOptimistic(optimisticAction); });
-      try {
-        const result = await serverAction();
-        if (result?.failure) toast(result.failure, "error");
-      } catch {
-        toast("An unexpected error occurred. Changes have been reverted.", "error");
-      }
+      startTransition(async () => {
+        dispatchOptimistic(optimisticAction);
+        try {
+          const result = await serverAction();
+          if (result?.failure) toast(result.failure, "error");
+          else router.refresh();
+        } catch {
+          toast("An unexpected error occurred. Changes have been reverted.", "error");
+        }
+      });
     },
-    [dispatchOptimistic, toast]
+    [dispatchOptimistic, toast, startTransition, router]
   );
 
   // ── SERVER ACTIONS ────────────────────────────────────────────────────────
-  const { executeAsync: execCreate } = useAction(createVaultItemAction);
-  const { executeAsync: execUpdate } = useAction(updateVaultItemAction);
+  const { executeAsync: execCreate, isExecuting: isCreating } = useAction(createVaultItemAction);
+  const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateVaultItemAction);
   const { executeAsync: execDelete } = useAction(deleteVaultItemAction);
   const { executeAsync: execBulkDelete, status: bulkDeleteStatus } = useAction(bulkDeleteVaultItemsAction);
   const { executeAsync: execExport, status: exportStatus } = useAction(exportVaultItemsAction);
@@ -551,7 +558,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
                 onOpenChange={(open) => !open && closeDialog()}
                 title={editingItem ? "Edit Credential" : "Add Credential"}
                 onSubmit={form.handleSubmit(onSubmit)}
-                isSubmitting={false}
+                isSubmitting={editingItem ? isUpdating : isCreating}
                 submitText={editingItem ? "Save" : "Add"}
               >
                 <Input variant="form" {...form.register("platform")} placeholder="Platform (e.g. GitHub)" autoFocus />
@@ -568,7 +575,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
       </PageLayout>
 
       {/* Unlock Modal */}
-      <Dialog open={isUnlockModalOpen} onOpenChange={(open) => { if (!open && masterPassword) setIsUnlockModalOpen(false); }}>
+      <Dialog open={isUnlockModalOpen} onOpenChange={setIsUnlockModalOpen}>
         <DialogContent aria-describedby={undefined} className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Key className="w-5 h-5 text-primary" />Unlock Vault</DialogTitle>

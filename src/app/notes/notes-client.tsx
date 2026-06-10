@@ -6,7 +6,6 @@ const MarkdownEditor = dynamic(() => import("@/components/editor/markdown").then
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -84,7 +83,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isImportingRef = useRef(false);
 
   // ── SERVER ACTIONS (background, executeAsync for await) ───────────────────
   const { executeAsync: execCreate } = useAction(createNoteAction);
@@ -198,14 +196,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     }
   }, [localTitle, localContent, activeNoteId, isDirty, draftKey]);
 
-  // Switch to active tab after create
-  useEffect(() => {
-    if (isImportingRef.current) {
-      isImportingRef.current = false;
-      setActiveTab("active");
-    }
-  }, []);
-
   // Preload MarkdownEditor chunk
   useEffect(() => {
     const t = setTimeout(() => { import("@/components/editor/markdown"); }, 1000);
@@ -233,10 +223,11 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     if (!activeNote || !isDirty) return;
     const uniqueTitle = getUniqueTitle(localTitle, activeNote.id);
     if (uniqueTitle !== localTitle) setLocalTitle(uniqueTitle);
-    // Optimistic update of title/content in list
+    // Local-only optimistic update (no server round-trip, no router.refresh needed)
     mutate(
       { type: "update", id: activeNote.id, patch: { title: uniqueTitle, content: localContent, updatedAt: new Date().toISOString() } },
-      async () => ({ success: true }) // Local only — no server call here
+      async () => ({ success: true }),
+      { skipRefresh: true }
     );
   };
 
@@ -275,7 +266,8 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
   const handleCloseDialog = () => {
     if (isDirty && activeNote) {
-      handleLocalSave();
+      // syncToDatabase also updates title/content in the optimistic state,
+      // so calling handleLocalSave() here would be a duplicate mutation.
       syncToDatabase();
     }
     startTransition(() => { void setActiveNoteId(""); });
@@ -412,7 +404,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      isImportingRef.current = true;
       const newId = generateUUID();
       const newTitle = file.name.replace(/\.[^/.]+$/, "");
       const newContent = event.target?.result as string;
@@ -648,11 +639,21 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
             </Table>
           </TableContainer>
 
-          {/* EDITOR DIALOG */}
-          <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-            <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden card-aura-responsive border-premium-border rounded-2xl shadow-2xl">
-              <DialogHeader className="p-4 border-b border-premium-border bg-black/5 dark:bg-black/20 shrink-0 flex flex-row items-center justify-between space-y-0">
-                <DialogTitle className="sr-only">Edit Note</DialogTitle>
+          {/* EDITOR DIALOG — raw Dialog for full layout control */}
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => !open && handleCloseDialog()}
+          >
+            <DialogContent
+              aria-describedby={undefined}
+              hideClose
+              className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl shadow-2xl card-aura-responsive border-premium-border"
+            >
+              {/* sr-only title for accessibility */}
+              <DialogTitle className="sr-only">Edit Note</DialogTitle>
+
+              {/* Custom header: inline title input + save button */}
+              <div className="p-4 border-b border-premium-border bg-black/5 dark:bg-black/20 flex flex-row items-center justify-between shrink-0">
                 <div className="flex-1 pr-4">
                   <input
                     type="text"
@@ -662,7 +663,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                     placeholder={t("untitled")}
                   />
                 </div>
-                <div className="flex items-center gap-3 shrink-0 mr-11">
+                <div className="flex items-center gap-3 shrink-0">
                   {isDirty && <span className="text-xs text-muted-foreground mr-2">Unsaved changes (Ctrl+S)</span>}
                   <Button
                     onClick={handleLocalSave}
@@ -674,8 +675,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                     Save
                   </Button>
                 </div>
-              </DialogHeader>
-              <div className="flex-1 overflow-hidden relative p-4 bg-transparent">
+              </div>
+
+              {/* Editor area fills remaining height */}
+              <div className="flex-1 overflow-hidden relative p-4 bg-transparent min-h-0">
                 <MarkdownEditor
                   value={localContent}
                   onChange={(val) => setLocalContent(val)}
@@ -691,3 +694,4 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     </div>
   );
 }
+

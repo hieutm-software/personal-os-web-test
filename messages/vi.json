@@ -106,7 +106,9 @@
     "loggingOut": "Đang đăng xuất…",
     "administration": "Quản trị",
     "adminDesc": "Quản lý người dùng và cài đặt hệ thống",
-    "loginSessions": "Phiên đăng nhập"
+    "loginSessions": "Phiên đăng nhập",
+    "sessionsAdminDesc": "Xem và quản lý tất cả các phiên đăng nhập đang hoạt động trên toàn hệ thống.",
+    "sessionsDesc": "Xem hoạt động đăng nhập gần đây và các phiên đang hoạt động của bạn."
   },
   "Admin": {
     "title": "Bảng quản trị",
@@ -130,5 +132,60 @@
     "confirmDelete": "Xác nhận xóa — nhập mật khẩu sudo:",
     "cancel": "Hủy",
     "success": "Xong!"
+  },
+  "Auth": {
+    "loginTitle": "Personal OS",
+    "loginDesc": "Nhập thông tin đăng nhập để truy cập không gian làm việc của bạn",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "signIn": "Đăng nhập",
+    "authenticating": "Đang xác thực...",
+    "noAccount": "Chưa có tài khoản?",
+    "signUp": "Đăng ký",
+    "signUpDesc": "Tạo tài khoản để truy cập không gian làm việc của bạn"
+  },
+  "Documents": {
+    "title": "Tài liệu",
+    "search": "Tìm kiếm tài liệu...",
+    "newFolder": "Thư mục mới",
+    "uploadFolder": "Tải lên thư mục",
+    "uploadFiles": "Tải lên tệp",
+    "downloadAll": "Tải xuống tất cả",
+    "downloadSelected": "Tải xuống đã chọn",
+    "deleteSelected": "Xóa đã chọn",
+    "deleteAll": "Xóa tất cả",
+    "restoreSelected": "Khôi phục đã chọn",
+    "restoreAll": "Khôi phục tất cả",
+    "emptyTrash": "Dọn sạch thùng rác",
+    "name": "Tên",
+    "type": "Loại",
+    "size": "Kích thước",
+    "modified": "Ngày sửa",
+    "actions": "Hành động",
+    "noDocuments": "Không có tài liệu",
+    "folderEmpty": "Thư mục này đang trống.",
+    "renameFolder": "Đổi tên thư mục",
+    "deleteFolder": "Xóa thư mục",
+    "folderName": "Tên thư mục"
+  },
+  "Vault": {
+    "title": "Mật khẩu",
+    "search": "Tìm kiếm mật khẩu...",
+    "exportSelected": "Xuất đã chọn",
+    "exportAll": "Xuất tất cả",
+    "import": "Nhập",
+    "deleteSelected": "Xóa đã chọn",
+    "addCredential": "Thêm mật khẩu",
+    "platform": "Nền tảng",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "modified": "Ngày sửa",
+    "actions": "Hành động",
+    "noCredentials": "Không có mật khẩu",
+    "vaultEmpty": "Kho lưu trữ của bạn đang trống.",
+    "vaultLocked": "Kho lưu trữ đã khóa",
+    "vaultLockedDesc": "Mật khẩu của bạn được mã hóa đầu cuối. Bạn phải mở khóa bằng Mật khẩu Master để truy cập.",
+    "unlockVault": "Mở khóa",
+    "masterPassword": "Mật khẩu Master"
   }
 }

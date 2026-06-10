@@ -79,8 +79,8 @@ export function TimePicker({ value, onChange, placeholder = "Select time", class
           {displayValue || placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" sideOffset={4} className="w-auto p-0 bg-premium-dark border-premium-border shadow-xl backdrop-blur-xl" align="start">
-        <div className="flex h-48 w-48 divide-x divide-premium-border">
+      <PopoverContent side="top" sideOffset={4} className="w-auto p-0 bg-white/90 dark:bg-premium-dark border border-black/[0.08] dark:border-premium-border shadow-xl backdrop-blur-xl" align="start">
+        <div className="flex h-48 w-48 divide-x divide-black/[0.08] dark:divide-premium-border">
           {/* Hours Column */}
           <div className="flex-1 overflow-y-auto scroll-smooth">
             <div className="flex flex-col p-1">
@@ -95,7 +95,7 @@ export function TimePicker({ value, onChange, placeholder = "Select time", class
                   }}
                   className={cn(
                     "rounded-sm px-2 py-1 h-8 text-sm justify-center hover:bg-primary/20 hover:text-primary",
-                    hour === h ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : ""
+                    hour === h ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "text-premium-text"
                   )}
                 >
                   {h}
@@ -117,7 +117,7 @@ export function TimePicker({ value, onChange, placeholder = "Select time", class
                   }}
                   className={cn(
                     "rounded-sm px-2 py-1 h-8 text-sm justify-center hover:bg-primary/20 hover:text-primary",
-                    minute === m ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : ""
+                    minute === m ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "text-premium-text"
                   )}
                 >
                   {m}
@@ -126,7 +126,7 @@ export function TimePicker({ value, onChange, placeholder = "Select time", class
             </div>
           </div>
         </div>
-        <div className="p-2 border-t border-premium-border bg-black/20 flex gap-2">
+        <div className="p-2 border-t border-black/[0.08] dark:border-premium-border bg-black/5 dark:bg-black/20 flex gap-2">
           <Button type="button" size="sm" variant="ghost" className="flex-1" onClick={(e) => { 
             e.preventDefault(); 
             setHour(""); 

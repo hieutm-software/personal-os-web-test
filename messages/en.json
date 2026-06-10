@@ -106,7 +106,9 @@
     "loggingOut": "Signing out…",
     "administration": "Administration",
     "adminDesc": "Manage users and system settings",
-    "loginSessions": "Login Sessions"
+    "loginSessions": "Login Sessions",
+    "sessionsAdminDesc": "View and manage all active login sessions across the system.",
+    "sessionsDesc": "View your recent login activity and active sessions."
   },
   "Admin": {
     "title": "Admin Panel",
@@ -130,5 +132,60 @@
     "confirmDelete": "Confirm deletion — enter sudo password:",
     "cancel": "Cancel",
     "success": "Done!"
+  },
+  "Auth": {
+    "loginTitle": "Personal OS",
+    "loginDesc": "Enter your credentials to access your workspace",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "authenticating": "Authenticating...",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up",
+    "signUpDesc": "Create an account to access your workspace"
+  },
+  "Documents": {
+    "title": "Documents",
+    "search": "Search documents...",
+    "newFolder": "New Folder",
+    "uploadFolder": "Upload Folder",
+    "uploadFiles": "Upload Files",
+    "downloadAll": "Download All",
+    "downloadSelected": "Download Selected",
+    "deleteSelected": "Delete Selected",
+    "deleteAll": "Delete All",
+    "restoreSelected": "Restore Selected",
+    "restoreAll": "Restore All",
+    "emptyTrash": "Empty Trash",
+    "name": "Name",
+    "type": "Type",
+    "size": "Size",
+    "modified": "Modified",
+    "actions": "Actions",
+    "noDocuments": "No Documents",
+    "folderEmpty": "Your folder is empty.",
+    "renameFolder": "Rename Folder",
+    "deleteFolder": "Delete Folder",
+    "folderName": "Folder Name"
+  },
+  "Vault": {
+    "title": "Vault",
+    "search": "Search credentials...",
+    "exportSelected": "Export Selected",
+    "exportAll": "Export All",
+    "import": "Import",
+    "deleteSelected": "Delete Selected",
+    "addCredential": "Add Credential",
+    "platform": "Platform",
+    "username": "Username",
+    "password": "Password",
+    "modified": "Modified",
+    "actions": "Actions",
+    "noCredentials": "No Credentials",
+    "vaultEmpty": "Your vault is empty.",
+    "vaultLocked": "Vault is Locked",
+    "vaultLockedDesc": "Your credentials are end-to-end encrypted. You must unlock the vault with your Master Password to access them.",
+    "unlockVault": "Unlock Vault",
+    "masterPassword": "Master Password"
   }
 }

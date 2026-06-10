@@ -13,7 +13,9 @@ import {
   Pencil, FolderUp, MoreHorizontal, RefreshCcw
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import React, { useRef, useState, useMemo, useEffect, useLayoutEffect } from "react";
+import React, { useRef, useState, useMemo, useEffect, useLayoutEffect, useOptimistic, useTransition, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { generateUUID } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -49,6 +51,59 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
+// ── Optimistic action types ────────────────────────────────────────────────
+type DocOptAction =
+  | { type: "add"; doc: Document }
+  | { type: "softDelete"; id: string }
+  | { type: "bulkSoftDelete"; ids: string[] }
+  | { type: "hardDelete"; id: string }
+  | { type: "bulkHardDelete"; ids: string[] }
+  | { type: "restore"; id: string }
+  | { type: "bulkRestore"; ids: string[] }
+  | { type: "move"; id: string; folderId: string | null }
+  | { type: "emptyTrash" };
+
+type FolderOptAction =
+  | { type: "add"; folder: DocumentFolder }
+  | { type: "rename"; id: string; name: string }
+  | { type: "softDelete"; id: string }
+  | { type: "hardDelete"; id: string }
+  | { type: "bulkHardDelete"; ids: string[] }
+  | { type: "restore"; id: string }
+  | { type: "bulkRestore"; ids: string[] }
+  | { type: "emptyTrash" };
+
+function docsReducer(state: Document[], action: DocOptAction): Document[] {
+  const now = new Date().toISOString();
+  switch (action.type) {
+    case "add": return [action.doc, ...state];
+    case "softDelete": return state.map(d => d.id === action.id ? { ...d, deletedAt: now } : d);
+    case "bulkSoftDelete": return state.map(d => action.ids.includes(d.id) ? { ...d, deletedAt: now } : d);
+    case "hardDelete": return state.filter(d => d.id !== action.id);
+    case "bulkHardDelete": return state.filter(d => !action.ids.includes(d.id));
+    case "restore": return state.map(d => d.id === action.id ? { ...d, deletedAt: null } : d);
+    case "bulkRestore": return state.map(d => action.ids.includes(d.id) ? { ...d, deletedAt: null } : d);
+    case "move": return state.map(d => d.id === action.id ? { ...d, folderId: action.folderId } : d);
+    case "emptyTrash": return state.filter(d => !d.deletedAt);
+    default: return state;
+  }
+}
+
+function foldersReducer(state: DocumentFolder[], action: FolderOptAction): DocumentFolder[] {
+  const now = new Date().toISOString();
+  switch (action.type) {
+    case "add": return [action.folder, ...state];
+    case "rename": return state.map(f => f.id === action.id ? { ...f, name: action.name, updatedAt: now } : f);
+    case "softDelete": return state.map(f => f.id === action.id ? { ...f, deletedAt: now } : f);
+    case "hardDelete": return state.filter(f => f.id !== action.id);
+    case "bulkHardDelete": return state.filter(f => !action.ids.includes(f.id));
+    case "restore": return state.map(f => f.id === action.id ? { ...f, deletedAt: null } : f);
+    case "bulkRestore": return state.map(f => action.ids.includes(f.id) ? { ...f, deletedAt: null } : f);
+    case "emptyTrash": return state.filter(f => !f.deletedAt);
+    default: return state;
+  }
+}
+
 type SortKey = "name" | "mimeType" | "sizeBytes" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
@@ -71,17 +126,48 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
   const [searchQuery, setSearchQuery] = useState("");
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "trash">("active");
+
+  // ── Optimistic state ───────────────────────────────────────────────
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [optimisticDocs, dispatchDocs] = useOptimistic(initialDocs, docsReducer);
+  const [optimisticFolders, dispatchFolders] = useOptimistic(initialFolders, foldersReducer);
+
+  /**
+   * Generic optimistic mutate — dispatches UI update immediately then awaits
+   * the server action. router.refresh() keeps the transition open until the
+   * RSC server component re-renders with fresh DB data (no flash).
+   */
+  const mutate = useCallback(
+    (
+      docsAction: DocOptAction | null,
+      foldersAction: FolderOptAction | null,
+      serverAction: () => Promise<unknown>
+    ) => {
+      startTransition(async () => {
+        if (docsAction) dispatchDocs(docsAction);
+        if (foldersAction) dispatchFolders(foldersAction);
+        try {
+          await serverAction();
+          router.refresh();
+        } catch {
+          // optimistic state auto-reverts when transition completes
+        }
+      });
+    },
+    [dispatchDocs, dispatchFolders, router, startTransition]
+  );
   
-  // Sync selectedDoc when initialDocs updates (e.g. after rename)
+  // Sync selectedDoc when optimisticDocs updates (e.g. after rename)
   useEffect(() => {
     if (selectedDoc) {
-      const updatedDoc = initialDocs.find(d => d.id === selectedDoc.id);
+      const updatedDoc = optimisticDocs.find(d => d.id === selectedDoc.id);
       if (updatedDoc && (updatedDoc.name !== selectedDoc.name || updatedDoc.updatedAt !== selectedDoc.updatedAt)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedDoc(updatedDoc);
       }
     }
-  }, [initialDocs, selectedDoc]);
+  }, [optimisticDocs, selectedDoc]);
   
   
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
@@ -112,11 +198,11 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
 
   const { executeAsync: execGetUploadUrl } = useAction(getUploadUrlAction);
   const { executeAsync: execFinalizeUpload } = useAction(finalizeUploadAction);
-  const { execute: execDelete } = useAction(deleteDocumentAction);
-  const { execute: execBulkDelete, status: bulkDeleteStatus } = useAction(bulkDeleteDocumentsAction);
-  const { execute: execRenameFolder } = useAction(renameFolderAction);
-  const { execute: execDeleteFolder } = useAction(deleteFolderAction);
-  const { execute: execMoveDoc } = useAction(moveDocumentAction);
+  const { executeAsync: execDelete } = useAction(deleteDocumentAction);
+  const { executeAsync: execBulkDelete, status: bulkDeleteStatus } = useAction(bulkDeleteDocumentsAction);
+  const { executeAsync: execRenameFolder } = useAction(renameFolderAction);
+  const { executeAsync: execDeleteFolder } = useAction(deleteFolderAction);
+  const { executeAsync: execMoveDoc } = useAction(moveDocumentAction);
 
   const { executeAsync: execRestoreDocs, status: restoreDocsStatus } = useAction(restoreDocumentsAction);
   const { executeAsync: execRestoreFolders, status: restoreFoldersStatus } = useAction(restoreFoldersAction);
@@ -124,19 +210,19 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
   const { executeAsync: execPermDeleteFolders, status: permDeleteFoldersStatus } = useAction(permanentlyDeleteFoldersAction);
   const { executeAsync: execEmptyTrash, status: emptyTrashStatus } = useAction(emptyDocumentsTrashAction);
 
-  // Compute breadcrumbs
+  // Compute breadcrumbs from optimistic folders
   const breadcrumbs = useMemo(() => {
     const crumbs: {id: string | null, name: string}[] = [{id: null, name: "Home"}];
     let currId = currentFolderId;
     const path: typeof crumbs = [];
     while (currId) {
-      const folder = initialFolders.find(f => f.id === currId);
+      const folder = optimisticFolders.find(f => f.id === currId);
       if (!folder) break;
       path.unshift({ id: folder.id, name: folder.name });
       currId = folder.parentId;
     }
     return [...crumbs, ...path];
-  }, [currentFolderId, initialFolders]);
+  }, [currentFolderId, optimisticFolders]);
 
   const [lastFolderId, setLastFolderId] = useState<string | null | undefined>(undefined);
   if (currentFolderId !== lastFolderId) {
@@ -162,8 +248,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
   const items: MixedItem[] = useMemo(() => {
     const result: MixedItem[] = [];
     
-    let currentFolders = initialFolders;
-    let currentDocs = initialDocs;
+    let currentFolders = optimisticFolders;
+    let currentDocs = optimisticDocs;
 
     if (viewMode === "active") {
       currentFolders = currentFolders.filter(f => !f.deletedAt && f.parentId === currentFolderId);
@@ -179,8 +265,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const allActiveDocs = viewMode === "active" ? initialDocs.filter(d => !d.deletedAt) : currentDocs;
-      const allActiveFolders = viewMode === "active" ? initialFolders.filter(f => !f.deletedAt) : currentFolders;
+      const allActiveDocs = viewMode === "active" ? optimisticDocs.filter(d => !d.deletedAt) : currentDocs;
+      const allActiveFolders = viewMode === "active" ? optimisticFolders.filter(f => !f.deletedAt) : currentFolders;
       
       docsToMap = allActiveDocs.filter(d => d.name.toLowerCase().includes(q) || (d.mimeType && d.mimeType.toLowerCase().includes(q)));
       foldersToMap = allActiveFolders.filter(f => f.name.toLowerCase().includes(q));
@@ -210,7 +296,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     });
 
     return result;
-  }, [initialDocs, initialFolders, currentFolderId, searchQuery, viewMode]);
+  }, [optimisticDocs, optimisticFolders, currentFolderId, searchQuery, viewMode]);
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -278,7 +364,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
 
       const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
       const MAX_TOTAL_STORAGE = 300 * 1024 * 1024; // 300MB
-      let currentTotalUsed = initialDocs.reduce((sum, doc) => sum + doc.sizeBytes, 0);
+      let currentTotalUsed = optimisticDocs.reduce((sum, doc) => sum + doc.sizeBytes, 0);
 
       const uploadPromises = [];
 
@@ -343,6 +429,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
       }
       
       await Promise.all(uploadPromises);
+      // Trigger RSC re-render so newly uploaded files appear in the list
+      router.refresh();
     } finally {
       setIsUploadingFolder(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -356,96 +444,98 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     await uploadFilesWithHierarchy(Array.from(files));
   };
 
-  const handleCreateFolderSubmit = async (e?: React.FormEvent) => {
+  const handleCreateFolderSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (newFolderName) {
-      await createFolderAction({ name: newFolderName, parentId: currentFolderId });
-      setCreateFolderOpen(false);
-      setNewFolderName("");
-    }
+    const trimmed = newFolderName.trim();
+    if (!trimmed) return;
+    // Close modal immediately — optimistic folder appears in list instantly
+    setCreateFolderOpen(false);
+    setNewFolderName("");
+    const tempFolder: DocumentFolder = {
+      id: generateUUID(),
+      name: trimmed,
+      parentId: currentFolderId,
+      userId: "",
+      deletedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mutate(
+      null,
+      { type: "add", folder: tempFolder },
+      () => createFolderAction({ name: trimmed, parentId: currentFolderId })
+    );
   };
 
-  const handleRenameFolderSubmit = async (e?: React.FormEvent) => {
+  const handleRenameFolderSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (renameFolderName && folderToRename && renameFolderName !== folderToRename.name) {
-      execRenameFolder({ id: folderToRename.id, name: renameFolderName });
-      setRenameFolderOpen(false);
-      setFolderToRename(null);
-    }
+    if (!renameFolderName || !folderToRename || renameFolderName === folderToRename.name) return;
+    const { id } = folderToRename;
+    const name = renameFolderName;
+    setRenameFolderOpen(false);
+    setFolderToRename(null);
+    mutate(
+      null,
+      { type: "rename", id, name },
+      () => execRenameFolder({ id, name })
+    );
   };
 
   const handleDelete = async (e: React.MouseEvent, item: MixedItem) => {
     e.stopPropagation();
     const isTrash = viewMode === "trash";
-    
+
     if (isTrash) {
-      const title = "Delete Item";
-      const confirmText = "Delete";
-      const msg = "Are you sure you want to permanently delete this item?";
-      
-      if (!(await confirm(msg, { title, confirmText, variant: "destructive" }))) return;
+      if (!(await confirm("Are you sure you want to permanently delete this item?", { title: "Delete Item", confirmText: "Delete", variant: "destructive" }))) return;
     }
+
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(item.id); return n; });
 
     if (viewMode === "active") {
       if (item.type === "document") {
-        execDelete({ id: item.id });
+        mutate({ type: "softDelete", id: item.id }, null, () => execDelete({ id: item.id }));
       } else {
-        execDeleteFolder({ id: item.id });
+        mutate(null, { type: "softDelete", id: item.id }, () => execDeleteFolder({ id: item.id }));
       }
     } else {
-        if (item.type === "document") {
-          await execPermDeleteDocs({ ids: [item.id] });
-        } else {
-          await execPermDeleteFolders({ ids: [item.id] });
-        }
+      if (item.type === "document") {
+        mutate({ type: "hardDelete", id: item.id }, null, () => execPermDeleteDocs({ ids: [item.id] }));
+      } else {
+        mutate(null, { type: "hardDelete", id: item.id }, () => execPermDeleteFolders({ ids: [item.id] }));
+      }
     }
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(item.id);
-      return next;
-    });
   };
 
   const handleRestore = async (e: React.MouseEvent, item: MixedItem) => {
     e.stopPropagation();
-    if (await confirm(`Are you sure you want to restore "${item.name}"?`, { title: "Restore Item", confirmText: "Restore", variant: "default" })) {
-      if (item.type === "document") {
-        await execRestoreDocs({ ids: [item.id] });
-      } else {
-        await execRestoreFolders({ ids: [item.id] });
-      }
+    if (!(await confirm(`Are you sure you want to restore "${item.name}"?`, { title: "Restore Item", confirmText: "Restore", variant: "default" }))) return;
+    if (item.type === "document") {
+      mutate({ type: "restore", id: item.id }, null, () => execRestoreDocs({ ids: [item.id] }));
+    } else {
+      mutate(null, { type: "restore", id: item.id }, () => execRestoreFolders({ ids: [item.id] }));
     }
   };
 
   const handleDeleteClick = async () => {
     const ids = selectedIds.size > 0 ? selectedIds : new Set(items.map((i) => i.id));
     if (ids.size === 0) return;
-    
-    const isTrash = viewMode === "trash";
-    
-    if (isTrash) {
-      const title = `Delete ${ids.size} Items`;
-      const confirmText = "Delete";
-      const msg = `Are you sure you want to permanently delete ${ids.size} selected item(s)?`;
 
-      if (!(await confirm(msg, { title, confirmText, variant: "destructive" }))) return;
+    const isTrash = viewMode === "trash";
+    if (isTrash) {
+      if (!(await confirm(`Are you sure you want to permanently delete ${ids.size} selected item(s)?`, { title: `Delete ${ids.size} Items`, confirmText: "Delete", variant: "destructive" }))) return;
     }
 
     const docIds = Array.from(ids).filter(id => items.find(i => i.id === id)?.type === "document");
     const folderIds = Array.from(ids).filter(id => items.find(i => i.id === id)?.type === "folder");
+    setSelectedIds(new Set());
 
     if (viewMode === "active") {
-      if (docIds.length > 0) {
-        execBulkDelete({ ids: docIds });
-      }
-      if (folderIds.length > 0) {
-        folderIds.forEach(fid => execDeleteFolder({ id: fid }));
-      }
+      if (docIds.length > 0) mutate({ type: "bulkSoftDelete", ids: docIds }, null, () => execBulkDelete({ ids: docIds }));
+      if (folderIds.length > 0) folderIds.forEach(fid => mutate(null, { type: "softDelete", id: fid }, () => execDeleteFolder({ id: fid })));
     } else {
-        if (docIds.length > 0) await execPermDeleteDocs({ ids: docIds });
-        if (folderIds.length > 0) await execPermDeleteFolders({ ids: folderIds });
+      if (docIds.length > 0) mutate({ type: "bulkHardDelete", ids: docIds }, null, () => execPermDeleteDocs({ ids: docIds }));
+      if (folderIds.length > 0) mutate(null, { type: "bulkHardDelete", ids: folderIds }, () => execPermDeleteFolders({ ids: folderIds }));
     }
-    setSelectedIds(new Set());
   };
 
   const handleDownloadClick = () => {
@@ -458,27 +548,25 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
 
   const handleRestoreAllClick = async () => {
     if (selectedIds.size > 0) {
-      if (await confirm(`Are you sure you want to restore ${selectedIds.size} selected item(s)?`, { title: `Restore ${selectedIds.size} Items`, confirmText: "Restore", variant: "default" })) {
-        const ids = Array.from(selectedIds);
-        const docs = ids.filter(id => items.find(i => i.id === id)?.type === "document");
-        const folders = ids.filter(id => items.find(i => i.id === id)?.type === "folder");
-        if (docs.length > 0) await execRestoreDocs({ ids: docs });
-        if (folders.length > 0) await execRestoreFolders({ ids: folders });
-        setSelectedIds(new Set());
-      }
+      if (!(await confirm(`Are you sure you want to restore ${selectedIds.size} selected item(s)?`, { title: `Restore ${selectedIds.size} Items`, confirmText: "Restore", variant: "default" }))) return;
+      const ids = Array.from(selectedIds);
+      const docs = ids.filter(id => items.find(i => i.id === id)?.type === "document");
+      const folders = ids.filter(id => items.find(i => i.id === id)?.type === "folder");
+      setSelectedIds(new Set());
+      if (docs.length > 0) mutate({ type: "bulkRestore", ids: docs }, null, () => execRestoreDocs({ ids: docs }));
+      if (folders.length > 0) mutate(null, { type: "bulkRestore", ids: folders }, () => execRestoreFolders({ ids: folders }));
     } else {
-      if (await confirm("Are you sure you want to restore all items from the Trash?", { title: "Restore All", confirmText: "Restore", variant: "default" })) {
-        const docs = items.filter(i => i.type === "document").map(i => i.id);
-        const folders = items.filter(i => i.type === "folder").map(i => i.id);
-        if (docs.length > 0) await execRestoreDocs({ ids: docs });
-        if (folders.length > 0) await execRestoreFolders({ ids: folders });
-      }
+      if (!(await confirm("Are you sure you want to restore all items from the Trash?", { title: "Restore All", confirmText: "Restore", variant: "default" }))) return;
+      const docs = items.filter(i => i.type === "document").map(i => i.id);
+      const folders = items.filter(i => i.type === "folder").map(i => i.id);
+      if (docs.length > 0) mutate({ type: "bulkRestore", ids: docs }, null, () => execRestoreDocs({ ids: docs }));
+      if (folders.length > 0) mutate(null, { type: "bulkRestore", ids: folders }, () => execRestoreFolders({ ids: folders }));
     }
   };
 
   const handleEmptyTrashClick = async () => {
     if (await confirm("Are you sure you want to permanently delete all items in the Trash?", { title: "Empty Trash", confirmText: "Empty Trash", variant: "destructive" })) {
-      execEmptyTrash();
+      mutate({ type: "emptyTrash" }, { type: "emptyTrash" }, () => execEmptyTrash());
     }
   };
 
@@ -659,11 +747,14 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     e.stopPropagation();
     setDragOverFolderId(null);
     if (viewMode === "trash") return;
-    
     if (item.type === "folder" && draggedItemId) {
-      // Move document to folder
-      await execMoveDoc({ documentId: draggedItemId, folderId: item.id });
+      const movedId = draggedItemId;
       setDraggedItemId(null);
+      mutate(
+        { type: "move", id: movedId, folderId: item.id },
+        null,
+        () => execMoveDoc({ documentId: movedId, folderId: item.id })
+      );
     }
   };
 

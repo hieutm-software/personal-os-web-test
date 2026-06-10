@@ -96,6 +96,15 @@ export function AdminDialog({
     execCreate(data);
   };
 
+  // Reset form and action result every time the create dialog opens/closes
+  const handleCreateOpenChange = (open: boolean) => {
+    setIsCreateOpen(open);
+    if (!open) {
+      form.reset({ username: "", password: "", role: "USER", sudoPassword: "" });
+      resetCreate();
+    }
+  };
+
   const handleConfirmDelete = () => {
     if (deleteTarget && sudoForDelete) {
       execDelete({ userId: deleteTarget, sudoPassword: sudoForDelete });
@@ -267,7 +276,7 @@ export function AdminDialog({
       </Dialog>
 
       {/* CREATE USER NESTED DIALOG */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={handleCreateOpenChange}>
         <DialogContent className="max-w-md w-full p-0 overflow-hidden card-aura-responsive border-premium-border shadow-2xl rounded-2xl">
           <DialogHeader className="p-6 pb-2 text-center border-b border-premium-border bg-black/5 dark:bg-black/20">
             <div className="mx-auto bg-primary/10 w-12 h-12 flex items-center justify-center rounded-full mb-3 shadow-inner">
@@ -353,7 +362,9 @@ export function AdminDialog({
                   type="button"
                   variant="outline"
                   className="w-full sm:w-auto"
-                  onClick={() => setIsCreateOpen(false)}
+                  onClick={() => {
+                  handleCreateOpenChange(false);
+                }}
                 >
                   Cancel
                 </Button>

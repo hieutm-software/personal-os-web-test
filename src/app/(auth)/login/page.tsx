@@ -3,7 +3,7 @@
 import { loginAction } from "@/lib/actions/auth";
 import { setLocaleAction } from "@/lib/actions/locale";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Monitor, Moon, Sun, Globe } from "lucide-react";
+import { ArrowLeft, Monitor, Moon, Sun, Globe } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -47,7 +47,14 @@ export default function LoginPage() {
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
 
       {/* Login Card */}
-      <div className="relative w-full max-w-md rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 shadow-2xl z-10">
+      <div className="relative w-full max-w-md rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 shadow-2xl z-10 pt-10">
+        <Link 
+          href="/" 
+          className="absolute top-5 left-5 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center rounded-full hover:bg-muted/50 p-1.5"
+          title="Back to Landing Page"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Personal OS

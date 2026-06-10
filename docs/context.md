@@ -59,23 +59,25 @@ Built with **Drizzle ORM**, the Postgres database contains the following core ta
 | Module | Route | Key Files | Description |
 |---|---|---|---|
 | **Dashboard** | `/` | `src/app/page.tsx` | Bento-grid overview with statistical charts built in pure Tailwind CSS. |
-| **Tasks** | `/tasks` | `src/app/tasks/page.tsx`, `src/lib/actions/tasks.ts` | Todo management with full-width grid layout and "Create/Edit Task" dialogs. |
+| **Tasks** | `/tasks` | `src/app/tasks/page.tsx`, `src/lib/actions/tasks.ts` | Todo management with full-width grid layout and "Create/Edit Task" dialogs. Fully optimistic UI. |
 | **Calendar** | `/calendar` | `src/app/calendar/page.tsx`, `src/lib/actions/events.ts` | Month view with day-click Dialogs for event management. Features `endTime >= startTime` adjustments. |
-| **Notes** | `/notes` | `src/app/notes/notes-client.tsx`, `src/lib/actions/docs.ts` | File Explorer Table view with a Markdown editor Dialog. Features 5-second autosave, soft delete, and Trash tab. |
+| **Notes** | `/notes` | `src/app/notes/notes-client.tsx`, `src/lib/actions/docs.ts` | File Explorer Table view with a Markdown editor Dialog. Features 5-second autosave, soft delete, empty note auto-cleanup, and Trash tab. |
 | **Documents** | `/documents` | `src/app/documents/page.tsx`, `src/lib/actions/documents.ts` | File manager supporting folders, Supabase upload via signed URLs, and file previewers. |
-| **Vault** | `/vault` | `src/app/vault/page.tsx`, `src/lib/actions/vault.ts` | Password manager with AES-256-GCM encryption and 1-click copy to clipboard. |
+| **Vault** | `/vault` | `src/app/vault/page.tsx`, `src/lib/actions/vault.ts` | Password manager with AES-256-GCM encryption. Master password stored in memory context (not sessionStorage). |
 | **Settings** | `/settings` | `src/app/settings/page.tsx`, `src/lib/actions/users.ts` | Admin controls, session monitoring, profile updates, and logout actions. |
 
 ---
 
 ## 3. UI/UX Design System & Global Behaviors
 
-- **Design Aesthetic:** Premium Office 365-style glassmorphism.
+- **Design Aesthetic:** Premium Office 365-style glassmorphism with a clean, minimalist approach.
+- **Forms & Dialogs:** All forms use a minimalist, placeholder-based interface. Explicit `<label>` elements have been removed in favor of clear placeholders for a less cluttered look.
 - **Themes:** Supports `light | dark | system` using CSS variable tokens defined in `globals.css`. Light theme uses a high-contrast `slate` color palette.
 - **Responsive Layout:**
   - **Desktop:** Sticky sidebar with Gemini-style collapse/expand toggle.
   - **Mobile (<768px):** Hamburger Sheet (Radix Dialog) navigation.
 - **Popup/Modal Architecture:** Nearly all CRUD forms (create task, edit event, manage user, markdown editor) open inside standard Shadcn UI `<Dialog>` components to maintain a seamless Single Page Application feel.
+- **Global Loading State:** Instantaneous route transitions are supported by a global loading state to provide immediate visual feedback.
 - **Cross-cutting Concerns:**
   - **Multi-tenant isolation:** Every DB mutation chains `eq(<table>.userId, session.userId)` to guarantee users only access their own data.
   - **URL State:** The `nuqs` library syncs filters and active IDs directly to the URL without full React re-renders.
@@ -83,10 +85,11 @@ Built with **Drizzle ORM**, the Postgres database contains the following core ta
 
 ---
 
-## 4. Known Technical Debt & Architectural Trade-offs
+## 4. Performance & Architectural Trade-offs
 
+- **Optimistic UI on Mutations:** To achieve ultra-low latency and eliminate flicker, `useOptimistic` is extensively used across modules (Tasks, Events, Notes, and Vault). UUIDs are generated optimistically on the client to align with server state.
 - **`react-hooks/set-state-in-effect` Suppression:** Used intentionally in a few locations for localStorage hydration, derived-state sync, and route-change drawer close. Each has an inline rationale comment.
-- **No Optimistic UI on Mutations:** Server actions use `next-safe-action`'s `useAction` hook. UI updates currently wait for `revalidatePath` round-trips. Wrapping mutations with `useOptimistic` is a future consideration for low-latency targets.
+- **Vault Security Focus:** The master password is held strictly in React memory state (Context). It is deliberately kept out of `sessionStorage` or `localStorage` to prevent XSS exfiltration, resetting gracefully on page reload.
 - **Seed Script DB Access:** `pnpm db:seed` (`src/lib/db/seed.ts`) must be run locally with `DATABASE_URL` set. There is no in-app "bootstrap" route for fresh deployments yet.
 
 ---
@@ -108,10 +111,17 @@ Built with **Drizzle ORM**, the Postgres database contains the following core ta
 
 ## 6. Recent Work & Active Tasks
 
-### ✅ Phase 3.7 — Infrastructure & Stability Fixes (Completed 2026-06-10)
-- **Next.js Cross-Origin Fix:** Configured `allowedDevOrigins` in `next.config.ts` to include local LAN IPs (`172.16.*`, `192.168.*`) preventing HMR blocked requests during local network testing.
-- **Storage Strategy Solidified:** Document module confirmed to successfully generate signed URLs directly against Supabase via Server Actions (`src/lib/actions/documents.ts`), persisting size and MIME type metadata accurately in Drizzle.
-- **Context Rewritten:** Upgraded this document (`context.md`) to deeply reflect the architectural constraints, UI systems, and schema of the live project.
+### ✅ Phase 3.9 — Performance & UX/UI Overhaul (Recent)
+- **Minimalist UI:** Removed explicit `<label>` tags across forms and dialogs in favor of a clean, placeholder-based interface.
+- **Optimistic UI:** Implemented `useOptimistic` extensively. Aligned optimistic UUIDs across Tasks, Events, and Vault to eliminate flicker on creation. Note creation is now fully optimistic and instantaneous.
+- **Global Routing Experience:** Added global loading states for instantaneous route transitions.
+- **Vault Security Upgrade:** Master password is now strictly stored in memory context instead of session storage.
+- **Notes UX:** Added auto-deletion of empty notes upon closing, prevented auto-opening of notes on creation, and implemented preloading of the editor chunk.
+- **Calendar & UI Fixes:** Added start and end time inputs to event creation. Prevented TabSwitcher from stretching full width.
 
-### ✅ Phase 3.8 — UI Refinement & Standardization (Completed 2026-06-10)
-- **Minimalist Form Aesthetics:** Standardized the UI design language across all dialogs and forms (Authentication, Settings, Admin, Calendar, and Documents) to use a clean, placeholder-based approach inspired by the Vault module. Explicit `<label>` elements were removed in favor of descriptive input placeholders, resulting in a cleaner and less cluttered interface.
+### ✅ Phase 3.8 — UI Refinement & Standardization
+- Standardized the UI design language across all dialogs and forms to use a clean approach inspired by the Vault module.
+
+### ✅ Phase 3.7 — Infrastructure & Stability Fixes
+- **Next.js Cross-Origin Fix:** Configured `allowedDevOrigins` in `next.config.ts`.
+- **Storage Strategy Solidified:** Document module confirmed to successfully generate signed URLs directly against Supabase via Server Actions.

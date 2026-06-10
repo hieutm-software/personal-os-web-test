@@ -117,8 +117,8 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   };
 
   // ── SERVER ACTIONS (background) ───────────────────────────────────────────
-  const { executeAsync: execCreate } = useAction(createTaskAction);
-  const { executeAsync: execUpdate } = useAction(updateTaskAction);
+  const { executeAsync: execCreate, isExecuting: isCreating } = useAction(createTaskAction);
+  const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateTaskAction);
   const { executeAsync: execDelete } = useAction(deleteTaskAction);
   const { executeAsync: execBulkDelete } = useAction(bulkDeleteTasksAction);
 
@@ -534,7 +534,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
             }
             title={modalState.task ? "Edit Task" : t("createTask")}
             onSubmit={form.handleSubmit(onSubmit)}
-            isSubmitting={false}
+            isSubmitting={modalState.task ? isUpdating : isCreating}
             submitText="Save"
           >
             <Input

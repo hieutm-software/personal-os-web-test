@@ -1,7 +1,8 @@
 "use client";
 
 import { Event } from "@/lib/db/schema";
-import { useOptimistic, useCallback, startTransition } from "react";
+import { useOptimistic, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
 export type OptimisticEventAction =
@@ -27,6 +28,8 @@ function optimisticReducer(state: Event[], action: OptimisticEventAction): Event
 
 export function useOptimisticEvents(serverEvents: Event[]) {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [optimisticEvents, dispatchOptimistic] = useOptimistic(
     serverEvents,
@@ -34,24 +37,26 @@ export function useOptimisticEvents(serverEvents: Event[]) {
   );
 
   const mutate = useCallback(
-    async <TResult extends { failure?: string; success?: unknown }>(
+    <TResult extends { failure?: string; success?: unknown }>(
       optimisticAction: OptimisticEventAction,
       serverAction: () => Promise<TResult | undefined>
     ) => {
-      startTransition(() => {
+      startTransition(async () => {
         dispatchOptimistic(optimisticAction);
-      });
-      try {
-        const result = await serverAction();
-        if (result?.failure) {
-          toast(result.failure, "error");
+        try {
+          const result = await serverAction();
+          if (result?.failure) {
+            toast(result.failure, "error");
+          } else {
+            router.refresh();
+          }
+        } catch {
+          toast("An unexpected error occurred. Changes have been reverted.", "error");
         }
-      } catch {
-        toast("An unexpected error occurred. Changes have been reverted.", "error");
-      }
+      });
     },
-    [dispatchOptimistic, toast]
+    [dispatchOptimistic, toast, startTransition, router]
   );
 
-  return { optimisticEvents, mutate };
+  return { optimisticEvents, mutate, isPending };
 }
