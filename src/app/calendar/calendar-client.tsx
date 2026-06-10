@@ -44,7 +44,7 @@ import { Toolbar } from "@/components/ui/toolbar";
 import { useDialogs } from "@/components/providers/dialog-provider";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { BaseModal } from "@/components/ui/base-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SortIcon } from "@/components/ui/sort-icon";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
@@ -513,7 +513,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             )}
           </div>
 
-          <FormDialog
+          <BaseModal
             isOpen={isCreateEventDialogOpen}
             onOpenChange={(open) => {
               setIsCreateEventDialogOpen(open);
@@ -543,7 +543,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                 {form.formState.errors.endTime && <p className="text-red-500 text-sm mt-1">{form.formState.errors.endTime.message}</p>}
               </div>
             </div>
-          </FormDialog>
+          </BaseModal>
         </div>
       </PageLayout>
     </div>

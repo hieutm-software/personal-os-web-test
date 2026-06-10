@@ -5,10 +5,8 @@ import { tasks, notes, documents } from "@/lib/db/schema";
 import { ilike, or, eq, and, isNull } from "drizzle-orm";
 import { verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { createSafeActionClient } from "next-safe-action";
 import { z } from "zod";
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 const searchSchema = z.object({
   query: z.string().min(1),

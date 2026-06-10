@@ -55,7 +55,7 @@ import { PageLayout } from "@/components/ui/page-layout";
 import { Toolbar } from "@/components/ui/toolbar";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
 import { encryptClient, decryptClient } from "@/lib/crypto-client";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { BaseModal } from "@/components/ui/base-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SortIcon } from "@/components/ui/sort-icon";
 import { useRowSelection } from "@/lib/hooks/use-row-selection";
@@ -123,7 +123,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
     }
   );
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const mutate = useCallback(
     <TResult extends { failure?: string; success?: unknown }>(
@@ -377,9 +377,10 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
     });
   }, [optimisticItems, sortConfig, searchQuery]);
 
-  const { selectedIds, setSelectedIds: _setSelectedIds, handleRowClick, clearSelection } = useRowSelection(sortedAndFilteredItems);
+  const { selectedIds, handleRowClick, clearSelection } = useRowSelection(sortedAndFilteredItems);
 
   const parentRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: sortedAndFilteredItems.length,
     getScrollElement: () => parentRef.current,
@@ -553,7 +554,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
                 </Table>
               </TableContainer>
 
-              <FormDialog
+              <BaseModal
                 isOpen={isDialogOpen}
                 onOpenChange={(open) => !open && closeDialog()}
                 title={editingItem ? "Edit Credential" : "Add Credential"}
@@ -568,7 +569,7 @@ export default function VaultClient({ initialItems }: { initialItems: VaultItemD
                 <Input variant="form" type="password" {...form.register("password")} placeholder={editingItem ? "New password (leave blank to keep)" : "Password"} />
                 {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
                 <Input variant="form" {...form.register("note")} placeholder="Note (optional)" />
-              </FormDialog>
+              </BaseModal>
             </>
           )}
         </div>

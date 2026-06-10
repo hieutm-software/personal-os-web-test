@@ -1,20 +1,12 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
-import crypto from "crypto";
-
-// ============================================================================
-// TYPES & SCHEMAS
-// ============================================================================
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 const createEventSchema = z
   .object({
@@ -67,17 +59,6 @@ const bulkDeleteEventsSchema = z.object({
 // CORE: AUTH & ISOLATION
 // ============================================================================
 
-async function getAuthenticatedUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  if (!token) throw new Error("Unauthorized");
-
-  const session = await verifySessionToken(token);
-  if (!session) throw new Error("Unauthorized");
-
-  return session;
-}
-
 // ============================================================================
 // ACTIONS
 // ============================================================================
@@ -86,7 +67,7 @@ export const createEventAction = actionClient
   .schema(createEventSchema)
   .action(async ({ parsedInput }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const approxBytes = (parsedInput.title?.length || 0) + (parsedInput.description?.length || 0);
       if (approxBytes > 0) {
@@ -116,7 +97,7 @@ export const updateEventAction = actionClient
   .schema(updateEventSchema)
   .action(async ({ parsedInput: { id, ...updates } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       // Validate chronological order if both times are being updated
       if (updates.startTime && updates.endTime) {
@@ -154,7 +135,7 @@ export const deleteEventAction = actionClient
   .schema(deleteEventSchema)
   .action(async ({ parsedInput: { id } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       // STRICT DATA ISOLATION: Enforce userId matching on deletion mutations
       const result = await db
@@ -176,7 +157,7 @@ export const bulkDeleteEventsAction = actionClient
   .schema(bulkDeleteEventsSchema)
   .action(async ({ parsedInput: { ids } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const result = await db
         .delete(events)

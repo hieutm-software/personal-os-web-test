@@ -4,11 +4,9 @@ import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
 import { cookies } from "next/headers";
 import { z } from "zod";
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),

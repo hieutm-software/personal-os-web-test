@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Lock, Zap, Command, Layers, Shield, Cpu, Code, Globe } from "lucide-react";
-import { useTheme } from "next-themes";
+
 
 export default function LandingPage() {
-  const { theme, setTheme } = useTheme();
+  // theme is not used here
 
   return (
     <div className="min-h-screen bg-[#000000] text-zinc-50 font-sans selection:bg-indigo-500/30 overflow-hidden relative">

@@ -4,12 +4,10 @@ import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 // ============================================================================
 // CORE: Sudo Validation Logic

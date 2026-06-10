@@ -1,7 +1,5 @@
 "use client";
 
-import { logoutAction } from "@/lib/actions/auth";
-import { setLocaleAction } from "@/lib/actions/locale";
 import { changePasswordAction } from "@/lib/actions/users";
 import { getVaultItemsForMigrationAction, bulkUpdateVaultPasswordsAction } from "@/lib/actions/vault";
 import { encryptClient, decryptClient } from "@/lib/crypto-client";
@@ -11,19 +9,17 @@ import {
   DatabaseBackup,
   Download,
   KeyRound,
-  LogOut,
   Monitor,
   Moon,
   Palette,
   ShieldAlert,
   Sun,
   Upload,
-  Globe,
 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useAction } from "next-safe-action/hooks";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -59,28 +55,21 @@ type ThemeOption = {
 
 import { SessionsView } from "./sessions-view";
 
-type SettingsUser = { id: string; username: string; role: "USER" | "ADMIN"; createdAt: string };
 type SessionItem = { id: string; userId: string; device: string | null; ip: string | null; location: string | null; loginAt: string; username?: string | null };
 
 export default function SettingsClient({
   isAdmin,
-  allUsers,
   allSessions,
-  currentUserId,
 }: {
   isAdmin: boolean;
-  allUsers: SettingsUser[];
   allSessions: SessionItem[];
-  currentUserId: string;
 }) {
   const t = useTranslations("Settings");
   const tCommon = useTranslations("Common");
 
   const { theme, setTheme } = useTheme();
-  const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -127,7 +116,7 @@ export default function SettingsClient({
             const plainPassword = await decryptClient(item.passwordEncrypted, data.currentPassword);
             const newEncrypted = await encryptClient(plainPassword, data.newPassword);
             updatedItems.push({ id: item.id, passwordEncrypted: newEncrypted });
-          } catch (error) {
+          } catch {
             // If it fails to decrypt, it was encrypted with a different password.
             // We skip it so we don't block the account password change, but we count it.
             failedDecryptionCount++;
@@ -163,18 +152,12 @@ export default function SettingsClient({
         console.warn(`${failedDecryptionCount} vault items could not be migrated because they were encrypted with a different password.`);
       }
       
-    } catch (e) {
+    } catch {
       setMigrationError("An unexpected error occurred during password synchronization.");
     } finally {
       setIsMigratingVault(false);
     }
   };
-
-  const handleLogout = useCallback(async () => {
-    setIsLoggingOut(true);
-    sessionStorage.removeItem("personalOSVaultKey");
-    await logoutAction();
-  }, []);
 
   useEffect(() => {
     if (result.data?.success) {

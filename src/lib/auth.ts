@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { users, sessions } from "@/lib/db/schema/index";
 import { eq } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 
 // ----------------------------------------------------------------------------
 // CONSTANTS & INITIALIZATION
@@ -82,6 +83,30 @@ export async function verifySessionToken(
 }
 
 /**
+ * Verifies a JWT token signature WITHOUT querying the database.
+ *
+ * This lightweight variant is designed exclusively for use in Next.js
+ * middleware (Edge Runtime). Middleware only needs to determine whether a
+ * valid JWT exists to make routing decisions — it does NOT need to check
+ * whether a password was recently changed, which requires a DB round-trip.
+ *
+ * The full DB-backed validation (password invalidation guard) is still
+ * performed for every Server Action via `getSession()` / `verifySessionToken()`.
+ *
+ * ⚠️ Do NOT use this in Server Actions or API routes where the DB check matters.
+ */
+export async function verifySessionJWT(
+  token: string,
+): Promise<AuthPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET_KEY);
+    return payload as AuthPayload;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Validates plaintext credentials against the database and generates a JWT.
  */
 export async function validateCredentials(
@@ -131,3 +156,30 @@ export async function validateCredentials(
 
   return { error: null, token, user: payload };
 }
+
+// ----------------------------------------------------------------------------
+// SERVER ACTION HELPER
+// ----------------------------------------------------------------------------
+
+/**
+ * Reads the session cookie and verifies the JWT in a Server Action context.
+ * Throws an Error("Unauthorized") if missing or invalid — ready for try/catch.
+ *
+ * Replaces the copy-pasted `getAuthenticatedUser()` functions that existed
+ * separately in docs.ts, events.ts, and tasks.ts.
+ *
+ * Usage:
+ *   const session = await getSession();
+ *   // session.userId, session.role
+ */
+export async function getSession(): Promise<AuthPayload> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  if (!token) throw new Error("Unauthorized");
+
+  const session = await verifySessionToken(token);
+  if (!session) throw new Error("Unauthorized");
+
+  return session;
+}
+

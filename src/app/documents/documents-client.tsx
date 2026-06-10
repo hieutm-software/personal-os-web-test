@@ -38,7 +38,7 @@ import { useDialogs } from "@/components/providers/dialog-provider";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Toolbar } from "@/components/ui/toolbar";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { BaseModal } from "@/components/ui/base-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SortIcon } from "@/components/ui/sort-icon";
 const DocumentViewer = dynamic(() => import("./document-viewer"), { ssr: false });
@@ -1200,7 +1200,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
       {/* --- DIALOGS --- */}
       
       {/* Create Folder Dialog */}
-      <FormDialog
+      <BaseModal
         isOpen={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         title="Create New Folder"
@@ -1217,10 +1217,10 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               placeholder="Folder name"
             />
           </div>
-      </FormDialog>
+      </BaseModal>
 
       {/* Rename Folder Dialog */}
-      <FormDialog
+      <BaseModal
         isOpen={renameFolderOpen}
         onOpenChange={setRenameFolderOpen}
         title="Rename Folder"
@@ -1237,7 +1237,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               placeholder="Folder name"
             />
           </div>
-      </FormDialog>
+      </BaseModal>
     </div>
   );
 }

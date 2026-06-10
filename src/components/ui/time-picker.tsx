@@ -35,7 +35,7 @@ export function TimePicker({ value, onChange, placeholder = "Select time", class
       if (h && m) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setHour(h);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setMinute(m);
       }
     } else {

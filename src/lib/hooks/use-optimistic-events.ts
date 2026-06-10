@@ -1,15 +1,21 @@
 "use client";
 
 import { Event } from "@/lib/db/schema";
-import { useOptimistic, useCallback, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
+import { useOptimisticList } from "./use-optimistic-list";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type OptimisticEventAction =
   | { type: "add"; event: Event }
   | { type: "update"; id: string; patch: Partial<Event> }
   | { type: "delete"; id: string }
   | { type: "bulkDelete"; ids: string[] };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REDUCER
+// ─────────────────────────────────────────────────────────────────────────────
 
 function optimisticReducer(state: Event[], action: OptimisticEventAction): Event[] {
   switch (action.type) {
@@ -26,37 +32,19 @@ function optimisticReducer(state: Event[], action: OptimisticEventAction): Event
   }
 }
 
-export function useOptimisticEvents(serverEvents: Event[]) {
-  const { toast } = useToast();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+// ─────────────────────────────────────────────────────────────────────────────
+// HOOK
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const [optimisticEvents, dispatchOptimistic] = useOptimistic(
+/**
+ * Optimistic state manager for the Events list.
+ * Built on top of the generic `useOptimisticList` hook.
+ */
+export function useOptimisticEvents(serverEvents: Event[]) {
+  const { optimisticItems, mutate, isPending } = useOptimisticList(
     serverEvents,
     optimisticReducer
   );
 
-  const mutate = useCallback(
-    <TResult extends { failure?: string; success?: unknown }>(
-      optimisticAction: OptimisticEventAction,
-      serverAction: () => Promise<TResult | undefined>
-    ) => {
-      startTransition(async () => {
-        dispatchOptimistic(optimisticAction);
-        try {
-          const result = await serverAction();
-          if (result?.failure) {
-            toast(result.failure, "error");
-          } else {
-            router.refresh();
-          }
-        } catch {
-          toast("An unexpected error occurred. Changes have been reverted.", "error");
-        }
-      });
-    },
-    [dispatchOptimistic, toast, startTransition, router]
-  );
-
-  return { optimisticEvents, mutate, isPending };
+  return { optimisticEvents: optimisticItems, mutate, isPending };
 }

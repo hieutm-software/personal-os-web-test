@@ -47,7 +47,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useAction } from "next-safe-action/hooks";
 import { useQueryState } from "nuqs";
-import { useEffect, useRef, useState, useMemo, startTransition } from "react";
+import { useEffect, useRef, useState, useMemo, startTransition, useCallback } from "react";
 import { useOptimisticNotes } from "@/lib/hooks/use-optimistic-notes";
 
 export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
@@ -171,14 +171,20 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setLocalTitle(parsed.title);
+           
           setLocalContent(parsed.content);
         } catch {
+           
           setLocalTitle(activeNote.title);
+           
           setLocalContent(activeNote.content);
         }
       } else {
+         
         setLocalTitle(activeNote.title);
+         
         setLocalContent(activeNote.content);
       }
     }
@@ -203,7 +209,8 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   }, []);
 
   // ── HELPERS ───────────────────────────────────────────────────────────────
-  const getUniqueTitle = (baseTitle: string, excludeId?: string) => {
+   
+  const getUniqueTitle = useCallback((baseTitle: string, excludeId?: string) => {
     const title = baseTitle || t("untitled");
     let finalTitle = title;
     let counter = 1;
@@ -217,9 +224,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       counter++;
     }
     return finalTitle;
-  };
+  }, [optimisticNotes, t]);
 
-  const handleLocalSave = () => {
+   
+  const handleLocalSave = useCallback(() => {
     if (!activeNote || !isDirty) return;
     const uniqueTitle = getUniqueTitle(localTitle, activeNote.id);
     if (uniqueTitle !== localTitle) setLocalTitle(uniqueTitle);
@@ -229,9 +237,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       async () => ({ success: true }),
       { skipRefresh: true }
     );
-  };
+  }, [activeNote, isDirty, localTitle, getUniqueTitle, localContent, mutate]);
 
-  const syncToDatabase = () => {
+   
+  const syncToDatabase = useCallback(() => {
     if (!activeNote) return;
     const uniqueTitle = getUniqueTitle(localTitle, activeNote.id);
     if (activeNote.title !== uniqueTitle || activeNote.content !== localContent) {
@@ -241,7 +250,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       );
     }
     if (draftKey) localStorage.removeItem(draftKey);
-  };
+  }, [activeNote, localTitle, getUniqueTitle, localContent, mutate, execUpdate, draftKey]);
 
   // Ctrl+S and beforeunload handlers
   useEffect(() => {
@@ -262,7 +271,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [isDialogOpen, isDirty, activeNote, localTitle, localContent]);
+  }, [isDialogOpen, isDirty, activeNote, localTitle, localContent, handleLocalSave, syncToDatabase]);
 
   const handleCloseDialog = () => {
     if (isDirty && activeNote) {

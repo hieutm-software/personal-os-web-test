@@ -3,17 +3,34 @@
 import { verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { vault } from "@/lib/db/schema";
-import { createSafeActionClient } from "next-safe-action";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import crypto from "crypto";
 import { eq, and, inArray } from "drizzle-orm";
-
+import { cookies } from "next/headers";
 import { checkNeonQuota } from "./quota";
+import { actionClient } from "./client";
 
-const actionClient = createSafeActionClient();
+// ============================================================================
+// SERVER-SIDE CRYPTO UTILITIES
+//
+// The vault uses TWO separate encryption systems that co-exist intentionally:
+//
+// 1. CLIENT-SIDE E2EE (WebCrypto / AES-GCM-256 + PBKDF2) — handled in
+//    `crypto-client.ts` and `crypto-core.ts`. Passwords encrypted this way
+//    carry the prefix "v2:" (format: "v2:<saltHex>:<ivHex>:<cipherHex>").
+//    The server NEVER sees or touches the Master Password; it only stores
+//    ciphertext. This achieves true Zero-Knowledge for the password field.
+//
+// 2. SERVER-SIDE AES-256-GCM (Node.js `crypto`) — defined below. Used as a
+//    transparent encryption layer for any legacy vault items that were written
+//    before E2EE was introduced (i.e., items without the "v2:" prefix).
+//    The key is derived from JWT_SECRET. This is NOT zero-knowledge, but it
+//    still ensures passwords are never stored in plaintext.
+//
+// The "v2:" prefix is the discriminator. Action handlers check for it to
+// decide which decryption path to invoke.
+// ============================================================================
 
-// Crypto Utils
 function getEncryptionKey() {
   if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is required");
   return crypto.createHash("sha256").update(process.env.JWT_SECRET).digest();

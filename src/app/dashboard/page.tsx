@@ -1,33 +1,29 @@
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events, notes, tasks, users } from "@/lib/db/schema";
-import { and, eq, gte, ne, desc, asc, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, ne, sql, asc } from "drizzle-orm";
 import {
   Bell,
   Calendar,
-  CheckCircle2,
   FileText,
-  Search,
-  User,
   Zap,
   HardDrive,
   Activity,
 } from "lucide-react";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import WeatherClockCard from "@/components/weather-clock-card";
+import WeatherClockCard from "@/components/layout/weather-clock-card";
 import { GlobalSearchTrigger } from "@/components/ui/global-search-trigger";
 import { UserMenu } from "./user-menu";
 import { EventCard } from "./event-card";
 
 export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  if (!token) redirect("/login");
-
-  const session = await verifySessionToken(token);
-  if (!session) redirect("/login");
+  let session;
+  try {
+    session = await getSession();
+  } catch {
+    redirect("/login");
+  }
 
   // --- Real System Stats ---
   const storageTotalMb = 500; // Neon free tier limit is 500MB
@@ -54,8 +50,10 @@ export default async function DashboardPage() {
 
   const currentUtcIso = new Date().toISOString();
 
-  // Fetch stats
-  const [openTasksList, completedTasksList, upcomingEventsList, allNotesList] = await Promise.all([
+  // Fetch all stats in a single Promise.all batch.
+  // upcomingEventsDetails is fetched once and sorted by SQL — its .length
+  // is reused for the stat card count, eliminating the duplicate query.
+  const [openTasksList, completedTasksList, upcomingEventsDetails, allNotesList] = await Promise.all([
     db
       .select({ id: tasks.id })
       .from(tasks)
@@ -64,21 +62,25 @@ export default async function DashboardPage() {
       .select({ id: tasks.id })
       .from(tasks)
       .where(and(eq(tasks.userId, session.userId), eq(tasks.status, "COMPLETED"))),
+    // ORDER BY in SQL replaces the 40-line JS sort that used `any` types.
+    // Priority: startTime ASC (events with a start time first), then endTime ASC.
     db
-      .select({ id: events.id })
+      .select()
       .from(events)
-      .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso))),
+      .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso)))
+      .orderBy(asc(events.startTime), asc(events.endTime)),
     db
       .select({ id: notes.id })
       .from(notes)
-      .where(eq(notes.userId, session.userId)),
+      .where(and(eq(notes.userId, session.userId), isNull(notes.deletedAt))),
   ]);
 
+  // Derive stats from the single events query (no separate count query needed)
   const openTasksCount = openTasksList.length;
   const completedTasksCount = completedTasksList.length;
   const totalTasksCount = openTasksCount + completedTasksCount;
   const taskCompletionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
-  const upcomingEventsCount = upcomingEventsList.length;
+  const upcomingEventsCount = upcomingEventsDetails.length;
   const totalNotesCount = allNotesList.length;
 
   let allUsers: { id: string; username: string; role: "USER" | "ADMIN"; createdAt: string }[] = [];
@@ -92,56 +94,6 @@ export default async function DashboardPage() {
       })
       .from(users);
   }
-
-  // Fetch upcoming events details
-  const upcomingEventsDetails = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso)));
-
-  upcomingEventsDetails.sort((a, b) => {
-    const getEventDateObj = (e: any) => {
-      if (e.startTime) return new Date(e.startTime);
-      if (e.endTime) return new Date(e.endTime);
-      return new Date(8640000000000000); // Max date
-    };
-
-    const dateA = getEventDateObj(a);
-    const dateB = getEventDateObj(b);
-
-    const dayA = new Date(dateA);
-    dayA.setHours(0, 0, 0, 0);
-    const dayB = new Date(dateB);
-    dayB.setHours(0, 0, 0, 0);
-
-    if (dayA.getTime() !== dayB.getTime()) {
-      return dayA.getTime() - dayB.getTime();
-    }
-
-    const hasStartA = !!a.startTime;
-    const hasStartB = !!b.startTime;
-
-    if (hasStartA && !hasStartB) return -1;
-    if (!hasStartA && hasStartB) return 1;
-
-    if (hasStartA && hasStartB) {
-      const startA = new Date(a.startTime!).getTime();
-      const startB = new Date(b.startTime!).getTime();
-      if (startA !== startB) return startA - startB;
-    } else {
-      const hasEndA = !!a.endTime;
-      const hasEndB = !!b.endTime;
-      if (hasEndA && hasEndB) {
-        const endA = new Date(a.endTime!).getTime();
-        const endB = new Date(b.endTime!).getTime();
-        if (endA !== endB) return endA - endB;
-      }
-    }
-
-    const createA = new Date(a.createdAt).getTime();
-    const createB = new Date(b.createdAt).getTime();
-    return createA - createB;
-  });
 
   return (
     <div className="flex flex-col gap-4 max-w-[1400px] mx-auto w-full h-full overflow-hidden p-4 md:p-6">

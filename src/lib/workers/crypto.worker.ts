@@ -1,5 +1,21 @@
-// crypto.worker.ts
-// Worker for offloading heavy crypto operations (like bulk decryption for E2EE exports)
+/**
+ * crypto.worker.ts
+ *
+ * Web Worker that offloads heavy crypto operations (e.g. bulk E2EE decryption
+ * for vault export) off the main UI thread to keep the 60FPS target.
+ *
+ * Previously this file contained a full duplicate of `deriveKey` and
+ * `decryptClient` (tracked as tech debt with a comment). That duplication has
+ * been resolved: crypto primitives now live in `crypto-core.ts`, which is
+ * compatible with both the main thread and Worker scope (no `window` refs).
+ *
+ * NOTE: Bundler configuration must mark this file as a Worker entry-point so
+ * that its transitive imports (crypto-core.ts) are included in the worker
+ * bundle. With Next.js + webpack 5 this is achieved by instantiating via:
+ *   new Worker(new URL("../lib/workers/crypto.worker.ts", import.meta.url))
+ */
+
+import { decryptCore } from "../crypto-core";
 
 self.addEventListener("message", async (e: MessageEvent) => {
   const { type, payload, masterPassword } = e.data;
@@ -7,12 +23,12 @@ self.addEventListener("message", async (e: MessageEvent) => {
   if (type === "BULK_DECRYPT") {
     try {
       const { items } = payload;
-      
+
       const decryptedItems = [];
       for (const item of items) {
         if (item.password?.startsWith("v2:")) {
           try {
-            const pwd = await decryptClient(item.password, masterPassword);
+            const pwd = await decryptCore(item.password, masterPassword);
             decryptedItems.push({ ...item, password: pwd });
           } catch {
             decryptedItems.push({ ...item, password: "ERROR_DECRYPTING" });
@@ -24,48 +40,10 @@ self.addEventListener("message", async (e: MessageEvent) => {
 
       self.postMessage({ success: true, data: decryptedItems });
     } catch (error: unknown) {
-      self.postMessage({ success: false, error: error instanceof Error ? error.message : String(error) });
+      self.postMessage({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 });
-
-// Duplicated Crypto Logic here because Workers run in a separate context
-// and standard imports can be tricky depending on the bundler setup.
-async function deriveKey(masterPassword: string, saltHex: string): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(masterPassword),
-    "PBKDF2",
-    false,
-    ["deriveBits", "deriveKey"]
-  );
-
-  const saltBytes = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-
-  return await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: saltBytes,
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"]
-  );
-}
-
-async function decryptClient(encryptedStr: string, masterPassword: string): Promise<string> {
-  const parts = encryptedStr.split(':');
-  if (parts.length !== 4 || parts[0] !== 'v2') throw new Error("Invalid format");
-  const [, saltHex, ivHex, cipherHex] = parts;
-
-  const key = await deriveKey(masterPassword, saltHex);
-  const iv = new Uint8Array(ivHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-  const cipherBytes = new Uint8Array(cipherHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-
-  const decryptedBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, cipherBytes);
-  return new TextDecoder().decode(decryptedBuffer);
-}

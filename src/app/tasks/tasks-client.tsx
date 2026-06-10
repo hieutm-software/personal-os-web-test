@@ -27,7 +27,7 @@ import { useDialogs } from "@/components/providers/dialog-provider";
 import { Button } from "@/components/ui/button";
 import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { BaseModal } from "@/components/ui/base-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SortIcon } from "@/components/ui/sort-icon";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
@@ -167,6 +167,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
 
   // ── VIRTUALIZATION ────────────────────────────────────────────────────────
   const parentRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: sortedAndFilteredTasks.length,
     getScrollElement: () => parentRef.current,
@@ -527,7 +528,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
           </TableContainer>
 
           {/* CREATE / EDIT DIALOG */}
-          <FormDialog
+          <BaseModal
             isOpen={modalState.isOpen}
             onOpenChange={(isOpen) =>
               !isOpen && setModalState({ isOpen: false, task: null })
@@ -543,7 +544,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
               placeholder="Enter a task name..."
               autoFocus
             />
-          </FormDialog>
+          </BaseModal>
         </div>
       </PageLayout>
     </div>

@@ -1,13 +1,10 @@
 "use server";
 
 import { validateCredentials } from "@/lib/auth";
-import { createSafeActionClient } from "next-safe-action";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
-// Initialize the safe action client
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 // Shared validation schema for the action and client form
 const loginSchema = z.object({

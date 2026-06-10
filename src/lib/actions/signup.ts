@@ -4,10 +4,8 @@ import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
 import { sendVerificationEmail } from "@/lib/mail";
 import { eq } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
 import { z } from "zod";
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 // ============================================================================
 // SEND OTP ACTION

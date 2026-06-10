@@ -1,15 +1,12 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notes } from "@/lib/db/schema";
 import { and, eq, inArray, isNotNull, isNull, like } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
-import { cookies } from "next/headers";
 import { z } from "zod";
+import { actionClient } from "./client";
 import { checkNeonQuota } from "./quota";
-
-const actionClient = createSafeActionClient();
 
 // ============================================================================
 // SCHEMAS
@@ -41,17 +38,6 @@ const bulkDeleteNoteSchema = z.object({
 // CORE: AUTH & ISOLATION
 // ============================================================================
 
-async function getAuthenticatedUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  if (!token) throw new Error("Unauthorized");
-
-  const session = await verifySessionToken(token);
-  if (!session) throw new Error("Unauthorized");
-
-  return session;
-}
-
 // ============================================================================
 // ACTIONS
 // ============================================================================
@@ -60,7 +46,7 @@ export const createNoteAction = actionClient
   .schema(createNoteSchema)
   .action(async ({ parsedInput }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const approxBytes = (parsedInput.title?.length || 0) + parsedInput.content.length;
       const hasQuota = await checkNeonQuota(session.userId, approxBytes);
@@ -114,7 +100,7 @@ export const updateNoteAction = actionClient
   .schema(updateNoteSchema)
   .action(async ({ parsedInput: { id, ...updates } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const approxBytes = (updates.title?.length || 0) + (updates.content?.length || 0);
       if (approxBytes > 0) {
@@ -145,7 +131,7 @@ export const deleteNoteAction = actionClient
   .schema(deleteNoteSchema)
   .action(async ({ parsedInput: { id } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       // STRICT DATA ISOLATION (SOFT DELETE)
       const result = await db
@@ -168,7 +154,7 @@ export const restoreNoteAction = actionClient
   .schema(deleteNoteSchema) // re-use id schema
   .action(async ({ parsedInput: { id } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const result = await db
         .update(notes)
@@ -190,7 +176,7 @@ export const permanentDeleteNoteAction = actionClient
   .schema(deleteNoteSchema)
   .action(async ({ parsedInput: { id } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const result = await db
         .delete(notes)
@@ -210,7 +196,7 @@ export const permanentDeleteNoteAction = actionClient
 export const emptyTrashAction = actionClient
   .action(async () => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       // Delete all soft-deleted notes for this user
       await db
@@ -226,7 +212,7 @@ export const emptyTrashAction = actionClient
 export const deleteAllNotesAction = actionClient
   .action(async () => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       // Soft delete all active notes for this user
       await db
@@ -244,7 +230,7 @@ export const bulkDeleteNotesAction = actionClient
   .schema(bulkDeleteNoteSchema)
   .action(async ({ parsedInput: { ids } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
       if (ids.length === 0) return { success: true };
 
       // Soft delete selected notes
@@ -262,7 +248,7 @@ export const bulkDeleteNotesAction = actionClient
 export const restoreAllNotesAction = actionClient
   .action(async () => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       await db
         .update(notes)
@@ -279,7 +265,7 @@ export const bulkRestoreNotesAction = actionClient
   .schema(bulkDeleteNoteSchema)
   .action(async ({ parsedInput: { ids } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
       if (ids.length === 0) return { success: true };
 
       await db
@@ -297,7 +283,7 @@ export const bulkPermanentDeleteNotesAction = actionClient
   .schema(bulkDeleteNoteSchema)
   .action(async ({ parsedInput: { ids } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
       if (ids.length === 0) return { success: true };
 
       await db

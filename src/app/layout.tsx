@@ -7,7 +7,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CommandPalette } from "@/components/ui/command-palette";
-import { PWARegister } from "@/components/pwa-register";
+import { PWARegister } from "@/components/layout/pwa-register";
 
 const inter = Inter({ subsets: ["latin"] });
 

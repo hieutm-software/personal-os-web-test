@@ -1,4 +1,4 @@
-import { verifySessionToken } from "@/lib/auth";
+import { verifySessionJWT } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 // CONSTANTS
 // ============================================================================
 
-const PUBLIC_ROUTES = new Set(["/", "/login"]);
+const PUBLIC_ROUTES = new Set(["/", "/login", "/signup"]);
 const ADMIN_ROUTES = ["/settings/admin"];
 const BYPASS_ROUTES = [
   "/_next", 
@@ -33,7 +33,9 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
   const token = request.cookies.get("session")?.value;
-  const payload = token ? await verifySessionToken(token) : null;
+  // verifySessionJWT performs JWT signature verification only (no DB query).
+  // Full DB-backed session validation happens inside Server Actions via getSession().
+  const payload = token ? await verifySessionJWT(token) : null;
 
   // 2. Unauthenticated state handling
   if (!payload) {
@@ -52,21 +54,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Authenticated state handling
-  if (payload) {
-    // Prevent authenticated users from accessing public routes that they shouldn't see
-    if (pathname === "/login" || pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+  // 3. Authenticated state handling — prevent accessing public routes
+  const isAttemptingPublicOnlyRoute = pathname === "/login" || pathname === "/" || pathname === "/signup";
+  if (isAttemptingPublicOnlyRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
-    // 4. Role-Based Access Control (RBAC) enforcement
-    const isAttemptingAdminRoute = ADMIN_ROUTES.some((route) =>
-      pathname.startsWith(route),
-    );
-    if (isAttemptingAdminRoute && payload.role !== "ADMIN") {
-      // Kick standard users back to settings if they try to access admin panel
-      return NextResponse.redirect(new URL("/settings", request.url));
-    }
+  // 4. Role-Based Access Control (RBAC) enforcement
+  const isAttemptingAdminRoute = ADMIN_ROUTES.some((route) =>
+    pathname.startsWith(route),
+  );
+  if (isAttemptingAdminRoute && payload.role !== "ADMIN") {
+    // Kick standard users back to settings if they try to access admin panel
+    return NextResponse.redirect(new URL("/settings", request.url));
   }
 
   return NextResponse.next();

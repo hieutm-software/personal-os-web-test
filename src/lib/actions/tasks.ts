@@ -1,20 +1,12 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
-import { createSafeActionClient } from "next-safe-action";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { checkNeonQuota } from "./quota";
-import crypto from "crypto";
-
-// ============================================================================
-// TYPES & SCHEMAS
-// ============================================================================
-
-const actionClient = createSafeActionClient();
+import { actionClient } from "./client";
 
 const createTaskSchema = z.object({
   id: z.string().uuid().optional(),
@@ -40,17 +32,6 @@ const bulkDeleteTasksSchema = z.object({
 // CORE: AUTH & ISOLATION
 // ============================================================================
 
-async function getAuthenticatedUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  if (!token) throw new Error("Unauthorized");
-
-  const session = await verifySessionToken(token);
-  if (!session) throw new Error("Unauthorized");
-
-  return session;
-}
-
 // ============================================================================
 // ACTIONS
 // NOTE: revalidatePath removed — optimistic UI keeps state in sync client-side.
@@ -61,7 +42,7 @@ export const createTaskAction = actionClient
   .schema(createTaskSchema)
   .action(async ({ parsedInput }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const approxBytes = parsedInput.title?.length || 0;
       if (approxBytes > 0) {
@@ -88,7 +69,7 @@ export const updateTaskAction = actionClient
   .schema(updateTaskSchema)
   .action(async ({ parsedInput: { id, ...updates } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const approxBytes = updates.title?.length || 0;
       if (approxBytes > 0) {
@@ -118,7 +99,7 @@ export const deleteTaskAction = actionClient
   .schema(deleteTaskSchema)
   .action(async ({ parsedInput: { id } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const result = await db
         .delete(tasks)
@@ -139,7 +120,7 @@ export const bulkDeleteTasksAction = actionClient
   .schema(bulkDeleteTasksSchema)
   .action(async ({ parsedInput: { ids } }) => {
     try {
-      const session = await getAuthenticatedUser();
+      const session = await getSession();
 
       const result = await db
         .delete(tasks)

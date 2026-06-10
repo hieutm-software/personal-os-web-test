@@ -1,9 +1,7 @@
 "use client";
 
 import { Task } from "@/lib/db/schema";
-import { useOptimistic, useCallback, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
+import { useOptimisticList } from "./use-optimistic-list";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -40,45 +38,15 @@ function optimisticReducer(state: Task[], action: OptimisticAction): Task[] {
 // HOOK
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Optimistic state manager for the Tasks list.
+ * Built on top of the generic `useOptimisticList` hook.
+ */
 export function useOptimisticTasks(serverTasks: Task[]) {
-  const { toast } = useToast();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const [optimisticTasks, dispatchOptimistic] = useOptimistic(
+  const { optimisticItems, mutate, isPending } = useOptimisticList(
     serverTasks,
     optimisticReducer
   );
 
-  /**
-   * Wraps optimistic dispatch + server action inside a single async
-   * startTransition so useOptimistic keeps the optimistic state visible
-   * for the entire round-trip (React 19 async transitions).
-   */
-  const mutate = useCallback(
-    <TResult extends { failure?: string; success?: unknown }>(
-      optimisticAction: OptimisticAction,
-      serverAction: () => Promise<TResult | undefined>,
-    ) => {
-      startTransition(async () => {
-        dispatchOptimistic(optimisticAction);
-        try {
-          const result = await serverAction();
-          if (result?.failure) {
-            toast(result.failure, "error");
-          } else {
-            // router.refresh() inside the transition keeps useOptimistic showing
-            // the optimistic state until the RSC server component re-renders
-            // with the new DB data from revalidatePath.
-            router.refresh();
-          }
-        } catch {
-          toast("An unexpected error occurred. Changes have been reverted.", "error");
-        }
-      });
-    },
-    [dispatchOptimistic, toast, startTransition, router]
-  );
-
-  return { optimisticTasks, mutate, isPending };
+  return { optimisticTasks: optimisticItems, mutate, isPending };
 }
