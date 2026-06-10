@@ -1,8 +1,15 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import withSerwistInit from "@serwist/next";
 
 // Bind next-intl plugin to our custom request configuration
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+});
 
 const nextConfig: NextConfig = {
   // Enforce strict mode for React 19 concurrent features
@@ -10,6 +17,9 @@ const nextConfig: NextConfig = {
 
   // Security & fingerprinting mitigation
   poweredByHeader: false,
+
+  // Allow LAN access for dev server
+  allowedDevOrigins: ["172.16.56.238", "localhost", "192.168.1.3", "172.16.57.49"],
 
   // Enable build-time payload compression
   compress: true,
@@ -32,4 +42,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(withSerwist(nextConfig));

@@ -81,9 +81,8 @@ export const createTaskAction = actionClient
       // Clear Next.js cache to hydrate the UI instantly
       revalidatePath("/tasks");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to create task" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to create task" };
     }
   });
 
@@ -115,9 +114,8 @@ export const updateTaskAction = actionClient
 
       revalidatePath("/tasks");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to update task" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to update task" };
     }
   });
 
@@ -140,9 +138,8 @@ export const deleteTaskAction = actionClient
 
       revalidatePath("/tasks");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete task" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete task" };
     }
   });
 
@@ -165,8 +162,7 @@ export const bulkDeleteTasksAction = actionClient
 
       revalidatePath("/tasks");
       return { success: true, count: result.length };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to bulk delete tasks" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to bulk delete tasks" };
     }
   });

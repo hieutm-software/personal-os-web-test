@@ -105,9 +105,8 @@ export const createNoteAction = actionClient
 
       revalidatePath("/notes");
       return { success: true, noteId: newNote.id };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to create note" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to create note" };
     }
   });
 
@@ -138,9 +137,8 @@ export const updateNoteAction = actionClient
 
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to save note" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to save note" };
     }
   });
 
@@ -163,9 +161,8 @@ export const deleteNoteAction = actionClient
 
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete note" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete note" };
     }
   });
 
@@ -187,9 +184,8 @@ export const restoreNoteAction = actionClient
 
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to restore note" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to restore note" };
     }
   });
 
@@ -210,9 +206,8 @@ export const permanentDeleteNoteAction = actionClient
 
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete note" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete note" };
     }
   });
 
@@ -233,9 +228,8 @@ export const emptyTrashAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to empty trash" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to empty trash" };
     }
   });
 
@@ -257,9 +251,8 @@ export const deleteAllNotesAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete all notes" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete all notes" };
     }
   });
 
@@ -283,9 +276,8 @@ export const bulkDeleteNotesAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to bulk delete notes" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to bulk delete notes" };
     }
   });
 
@@ -306,9 +298,8 @@ export const restoreAllNotesAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to restore all notes" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to restore all notes" };
     }
   });
 
@@ -331,9 +322,8 @@ export const bulkRestoreNotesAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to bulk restore notes" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to bulk restore notes" };
     }
   });
 
@@ -355,8 +345,7 @@ export const bulkPermanentDeleteNotesAction = actionClient
       
       revalidatePath("/notes");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to bulk permanently delete notes" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to bulk permanently delete notes" };
     }
   });

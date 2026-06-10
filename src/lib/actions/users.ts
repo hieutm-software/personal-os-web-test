@@ -66,3 +66,31 @@ export const changePasswordAction = actionClient
 
     return { success: true };
   });
+
+export const verifyCurrentPasswordAction = actionClient
+  .schema(z.object({ password: z.string().min(1) }))
+  .action(async ({ parsedInput: { password } }) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session")?.value;
+    if (!token) return { failure: "Unauthorized" };
+
+    const session = await verifySessionToken(token);
+    if (!session) return { failure: "Unauthorized" };
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1);
+
+    if (!user) return { failure: "User not found" };
+
+    const bcrypt = (await import("bcryptjs")).default;
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    
+    if (!isPasswordValid) return { failure: "Incorrect password" };
+
+    return { success: true };
+  });

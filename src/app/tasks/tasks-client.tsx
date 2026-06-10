@@ -1,5 +1,6 @@
 "use client";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   bulkDeleteTasksAction,
   createTaskAction,
@@ -7,11 +8,10 @@ import {
   updateTaskAction,
 } from "@/lib/actions/tasks";
 import { Task } from "@/lib/db/schema";
-import { cn, formatDate } from "@/lib/utils";
+import { generateUUID, formatDate } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ChevronDown,
-  ChevronUp,
+  CheckSquare,
   ListTodo,
   Loader2,
   Pencil,
@@ -21,22 +21,23 @@ import {
 import { useTranslations } from "next-intl";
 import { useAction } from "next-safe-action/hooks";
 import { useQueryState } from "nuqs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ActionButton } from "@/components/ui/action-button";
 import { useDialogs } from "@/components/providers/dialog-provider";
+import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
+import { Input } from "@/components/ui/input";
+import { FormDialog } from "@/components/ui/form-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SortIcon } from "@/components/ui/sort-icon";
+import { TabSwitcher } from "@/components/ui/tab-switcher";
+import { usePendingSync } from "@/lib/hooks/use-pending-sync";
+import { useRowSelection } from "@/lib/hooks/use-row-selection";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Toolbar } from "@/components/ui/toolbar";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // SCHEMAS & TYPES
@@ -77,7 +78,6 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { confirm } = useDialogs();
 
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setLocalTasks(initialTasks), [initialTasks]);
 
   // ── STATE ─────────────────────────────────────────────────────────────────
@@ -112,9 +112,6 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { execute: execDelete, status: deleteStatus } = useAction(deleteTaskAction);
   const { execute: execBulkDelete } = useAction(bulkDeleteTasksAction);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
-  const [lastSelectedTaskId, setLastSelectedTaskId] = useState<string | null>(null);
-
   // ── FORM ──────────────────────────────────────────────────────────────────
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -130,45 +127,8 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
     }
   }, [modalState, form]);
 
-  // ── HANDLERS ──────────────────────────────────────────────────────────────
-  const handleSort = (key: SortKey) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
-  const toggleTaskCompletion = (e: React.MouseEvent, task: Task) => {
-    e.stopPropagation();
-    const nextStatus = NEXT_STATUS_MAP[task.status];
-    setLocalTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
-    execUpdate({ id: task.id, status: nextStatus });
-  };
-
-  const onSubmit = (data: TaskFormValues) => {
-    if (modalState.task) {
-      setLocalTasks(prev => prev.map(t => t.id === modalState.task!.id ? { ...t, title: data.title, status: data.status || t.status } : t));
-      execUpdate({
-        id: modalState.task.id,
-        title: data.title,
-      });
-    } else {
-      const newId = crypto.randomUUID();
-      setLocalTasks(prev => [{
-        id: newId,
-        title: data.title,
-        status: data.status || "PENDING",
-        userId: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as Task, ...prev]);
-      execCreate({
-        id: newId,
-        title: data.title,
-      });
-    }
-    setModalState({ isOpen: false, task: null });
-  };
+  // ── DEBOUNCED SYNC QUEUE ──────────────────────────────────────────────────
+  const { queueUpdate } = usePendingSync<Task>(execUpdate);
 
   // ── DERIVED STATE ─────────────────────────────────────────────────────────
   const sortedAndFilteredTasks = useMemo(() => {
@@ -189,6 +149,17 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
     });
   }, [localTasks, statusFilter, sortConfig]);
 
+  const { selectedIds: selectedTaskIds, setSelectedIds: setSelectedTaskIds, handleRowClick, clearSelection } = useRowSelection(sortedAndFilteredTasks);
+
+  // ── VIRTUALIZATION ────────────────────────────────────────────────────────
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: sortedAndFilteredTasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 53, // Approx height of a row
+    overscan: 10,
+  });
+
   // Clean up selected IDs if tasks are deleted or filtered out
   useEffect(() => {
     setTimeout(() => {
@@ -205,51 +176,8 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
         }
         return changed ? next : prev;
       });
-
-      setLastSelectedTaskId((prev) => {
-        if (prev && !sortedAndFilteredTasks.some((t) => t.id === prev)) {
-          return null;
-        }
-        return prev;
-      });
     }, 0);
-  }, [sortedAndFilteredTasks]);
-
-  const handleRowClick = (e: React.MouseEvent, taskId: string, index: number) => {
-    e.stopPropagation();
-
-    if (e.shiftKey) {
-      e.preventDefault();
-      const currentIndex = index;
-      const anchorId = lastSelectedTaskId || sortedAndFilteredTasks[0]?.id;
-      const lastIndex = sortedAndFilteredTasks.findIndex((t) => t.id === anchorId);
-      
-      if (currentIndex !== -1 && lastIndex !== -1) {
-        const start = Math.min(currentIndex, lastIndex);
-        const end = Math.max(currentIndex, lastIndex);
-        const newSelection = new Set<string>();
-        for (let i = start; i <= end; i++) {
-          newSelection.add(sortedAndFilteredTasks[i].id);
-        }
-        setSelectedTaskIds(newSelection);
-        return;
-      }
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const newSelection = new Set(selectedTaskIds);
-      if (newSelection.has(taskId)) {
-        newSelection.delete(taskId);
-      } else {
-        newSelection.add(taskId);
-      }
-      setSelectedTaskIds(newSelection);
-    } else {
-      setSelectedTaskIds(new Set([taskId]));
-    }
-    setLastSelectedTaskId(taskId);
-  };
+  }, [sortedAndFilteredTasks, setSelectedTaskIds]);
 
   const handleDeleteAll = async () => {
     if (selectedTaskIds.size > 0) {
@@ -270,14 +198,40 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
 
   const isSubmitting = createStatus === "executing" || updateStatus === "executing";
 
-  // ── SUBCOMPONENTS ─────────────────────────────────────────────────────────
-  const renderSortIcon = (columnKey: SortKey) => {
-    if (sortConfig.key !== columnKey) return null;
-    return (
-      <span className="text-muted-foreground">
-        {sortConfig.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </span>
-    );
+  const handleSort = (key: SortKey) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const toggleTaskCompletion = (e: React.MouseEvent, task: Task) => {
+    e.stopPropagation();
+    const nextStatus = NEXT_STATUS_MAP[task.status];
+    setLocalTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
+    queueUpdate(task.id, { status: nextStatus });
+  };
+
+  const onSubmit = (data: TaskFormValues) => {
+    if (modalState.task) {
+      setLocalTasks(prev => prev.map(t => t.id === modalState.task!.id ? { ...t, title: data.title, status: data.status || t.status } : t));
+      queueUpdate(modalState.task.id, { title: data.title });
+    } else {
+      const newId = generateUUID();
+      setLocalTasks(prev => [{
+        id: newId,
+        title: data.title,
+        status: data.status || "PENDING",
+        userId: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as Task, ...prev]);
+      execCreate({
+        id: newId,
+        title: data.title,
+      });
+    }
+    setModalState({ isOpen: false, task: null });
   };
 
   return (
@@ -286,37 +240,21 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
         <ListTodo className="w-6 h-6 text-primary" />
         Tasks
       </div>
-      <PageLayout className="rounded-xl border shadow-sm relative select-none">
+      <PageLayout className="relative select-none border-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-primary/5 via-transparent to-transparent pointer-events-none z-0" />
+        <div className="relative z-10 h-full flex flex-col">
       <Toolbar
         search={
-          <div className="flex items-center gap-2">
-            <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
-              {[
-                { value: "ALL", label: t("all") },
-                { value: "PENDING", label: t("pending") },
-                { value: "IN_PROGRESS", label: t("inProgress") },
-                { value: "COMPLETED", label: t("completed") },
-              ].map((filter) => {
-                const isActive = statusFilter === filter.value;
-                return (
-                  <Button
-                    key={filter.value}
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setStatusFilter(filter.value)}
-                    className={cn(
-                      "whitespace-nowrap flex items-center",
-                      isActive
-                        ? "bg-background text-foreground shadow-sm hover:bg-background"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {filter.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
+          <TabSwitcher
+            tabs={[
+              { value: "ALL", label: t("all") },
+              { value: "PENDING", label: t("pending") },
+              { value: "IN_PROGRESS", label: t("inProgress") },
+              { value: "COMPLETED", label: t("completed") },
+            ]}
+            value={statusFilter}
+            onValueChange={(val) => setStatusFilter(val)}
+          />
         }
         actions={
           <>
@@ -346,10 +284,8 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* ── FILE EXPLORER (TABLE VIEW) ──────────────────────────────────── */}
       <TableContainer
-        onClick={() => {
-          setSelectedTaskIds(new Set());
-          setLastSelectedTaskId(null);
-        }}
+        ref={parentRef}
+        onClick={() => clearSelection()}
       >
         <Table>
           <TableHeader onClick={(e) => e.stopPropagation()}>
@@ -360,7 +296,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
               >
                 <div className="flex items-center gap-2">
                   Task Name
-                  {renderSortIcon("title")}
+                  <SortIcon active={sortConfig.key === "title"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead 
@@ -369,7 +305,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
               >
                 <div className="flex items-center gap-2">
                   Created
-                  {renderSortIcon("createdAt")}
+                  <SortIcon active={sortConfig.key === "createdAt"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead 
@@ -378,7 +314,7 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
               >
                 <div className="flex items-center gap-2">
                   Status
-                  {renderSortIcon("status")}
+                  <SortIcon active={sortConfig.key === "status"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead className="w-[120px] min-w-[120px] text-left">Actions</TableHead>
@@ -387,134 +323,127 @@ export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
           <TableBody>
             {sortedAndFilteredTasks.length === 0 ? (
               <TableRow className="hover:bg-transparent cursor-default">
-                <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
-                  {t("noTasks")}
+                <TableCell colSpan={4} className="p-0">
+                  <EmptyState 
+                    icon={CheckSquare}
+                    title={t("noTasks")}
+                    description={statusFilter !== "ALL" ? "No tasks match your filters." : "You have no tasks yet."}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
-              sortedAndFilteredTasks.map((task, index) => {
-                const isCompleted = task.status === "COMPLETED";
-                return (
-                  <TableRow
-                    key={task.id}
-                    className={cn(
-                      "group transition-colors border-b border-border/50 border-l-2 cursor-pointer",
-                      selectedTaskIds.has(task.id)
-                        ? "bg-primary/5 border-l-primary"
-                        : "hover:bg-muted/50 border-l-transparent"
-                    )}
-                    onClick={(e) => handleRowClick(e, task.id, index)}
-                  >
-                    <TableCell className="font-medium text-foreground w-full max-w-[0px]">
-                      <div 
-                        className="w-full cursor-pointer" 
-                        onClick={(e) => toggleExpand(e, task.id)}
-                        title={t("toggleExpand")}
-                      >
-                        <div 
-                          className={cn(
-                            "whitespace-normal",
-                            !expandedTasks.has(task.id) && "line-clamp-1"
-                          )}
-                          style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
-                        >
-                          <span className={isCompleted ? "line-through text-muted-foreground" : ""}>
-                            {task.title}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground hidden sm:table-cell">
-                      {formatDate(task.createdAt)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <div className="flex items-center">
-                        <button
-                          onClick={(e) => toggleTaskCompletion(e, task)}
-                          style={{ width: '130px' }}
-                          className={`text-[10px] font-bold py-1.5 px-3 rounded-full shrink-0 inline-flex items-center justify-center text-center whitespace-nowrap hover:opacity-80 transition-opacity ${STATUS_STYLES[task.status]}`}
-                        >
-                          {task.status.replace("_", " ")}
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-left">
-                      <div className="flex items-center justify-start gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <ActionButton
-                          actionType="edit"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModalState({ isOpen: true, task });
-                          }}
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </ActionButton>
-                        <ActionButton
-                          actionType="delete"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLocalTasks(prev => prev.filter(t => t.id !== task.id));
-                            execDelete({ id: task.id });
-                          }}
-                          disabled={deleteStatus === "executing"}
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </ActionButton>
-                      </div>
-                    </TableCell>
+              <>
+                {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getVirtualItems()[0].start > 0 && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={4} style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px`, padding: 0, border: 0 }} />
                   </TableRow>
-                );
-              })
+                )}
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const task = sortedAndFilteredTasks[virtualRow.index];
+                  const isCompleted = task.status === "COMPLETED";
+                  return (
+                    <TableRow
+                      key={virtualRow.key}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      className={cn(
+                        "group transition-colors border-b border-border/50 border-l-2 cursor-pointer",
+                        selectedTaskIds.has(task.id)
+                          ? "bg-primary/5 border-l-primary"
+                          : "hover:bg-muted/50 border-l-transparent"
+                      )}
+                      onClick={(e) => handleRowClick(e, task.id, virtualRow.index)}
+                    >
+                      <TableCell className="font-medium text-foreground w-full max-w-[0px] h-full align-middle">
+                        <div 
+                          className="w-full cursor-pointer" 
+                          onClick={(e) => toggleExpand(e, task.id)}
+                          title={t("toggleExpand")}
+                        >
+                          <div 
+                            className={cn(
+                              "whitespace-normal",
+                              !expandedTasks.has(task.id) && "line-clamp-1"
+                            )}
+                            style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+                          >
+                            <span className={isCompleted ? "line-through text-muted-foreground" : ""}>
+                              {task.title}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground hidden sm:table-cell">
+                        {formatDate(task.createdAt)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center">
+                          <button
+                            onClick={(e) => toggleTaskCompletion(e, task)}
+                            style={{ width: '130px' }}
+                            className={`text-[10px] font-bold py-1.5 px-3 rounded-full shrink-0 inline-flex items-center justify-center text-center whitespace-nowrap hover:opacity-80 transition-opacity ${STATUS_STYLES[task.status]}`}
+                          >
+                            {task.status.replace("_", " ")}
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-left">
+                        <div className="flex items-center justify-start gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <ActionButton
+                            actionType="edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModalState({ isOpen: true, task });
+                            }}
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </ActionButton>
+                          <ActionButton
+                            actionType="delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocalTasks(prev => prev.filter(t => t.id !== task.id));
+                              execDelete({ id: task.id });
+                            }}
+                            disabled={deleteStatus === "executing"}
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </ActionButton>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end || 0) > 0 && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={4} style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end || 0)}px`, padding: 0, border: 0 }} />
+                  </TableRow>
+                )}
+              </>
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
       {/* CREATE / EDIT DIALOG */}
-      <Dialog
-        open={modalState.isOpen}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setModalState({ isOpen: false, task: null });
-          }
-        }}
+      <FormDialog
+        isOpen={modalState.isOpen}
+        onOpenChange={(isOpen) => !isOpen && setModalState({ isOpen: false, task: null })}
+        title={modalState.task ? "Edit Task" : t("createTask")}
+        onSubmit={form.handleSubmit(onSubmit)}
+        isSubmitting={isSubmitting}
+        submitText="Save"
       >
-        <DialogContent aria-describedby={undefined} className="sm:max-w-2xl bg-background border-border p-6 sm:p-8 rounded-2xl shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-tight">{modalState.task ? "Edit Task" : t("createTask")}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6 flex flex-col mt-4"
-          >
-            <div className="space-y-4">
-              <Input
-                {...form.register("title")}
-                className="h-auto rounded-xl border-transparent bg-muted/30 px-4 py-4 text-base font-medium shadow-sm focus-visible:border-primary/30 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
-                placeholder="Enter a task name..."
-                autoFocus
-              />
-            </div>
-            <div className="flex items-center justify-end mt-6 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalState({ isOpen: false, task: null })}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : "Save"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Input
+          variant="form"
+          {...form.register("title")}
+          placeholder="Enter a task name..."
+          autoFocus
+        />
+      </FormDialog>
+      </div>
       </PageLayout>
     </div>
   );

@@ -23,6 +23,14 @@ function getWeatherInfo(code: number, isDay: boolean = true) {
   return { Icon: isDay ? Sun : Moon, color: isDay ? "text-yellow-400" : "text-blue-300", desc: "Clear" };
 }
 
+function getTempStyle(temp: number) {
+  if (temp < 10) return { text: "text-cyan-500 dark:text-cyan-400", bg: "from-cyan-500/10" };
+  if (temp < 20) return { text: "text-blue-500 dark:text-blue-400", bg: "from-blue-500/10" };
+  if (temp < 28) return { text: "text-emerald-500 dark:text-emerald-400", bg: "from-emerald-500/10" };
+  if (temp < 35) return { text: "text-orange-500 dark:text-orange-400", bg: "from-orange-500/10" };
+  return { text: "text-red-500 dark:text-red-400", bg: "from-red-500/10" };
+}
+
 interface WeatherData {
   current: {
     temp: number;
@@ -183,9 +191,11 @@ export default function WeatherClockCard() {
     };
   }, [selectedCity]);
 
-  return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm p-4 sm:p-6 flex flex-col glassmorphism relative min-h-[160px] h-full w-full">
+  const tempStyle = weather ? getTempStyle(weather.current.temp) : { text: "text-primary", bg: "from-primary/10" };
 
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-sm p-4 sm:p-6 flex flex-col glassmorphism relative min-h-[160px] w-full overflow-hidden transition-colors duration-1000">
+      <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-bl ${tempStyle.bg} via-transparent to-transparent pointer-events-none z-0 transition-colors duration-1000`} />
 
       {loading && !weather ? (
         <div className="flex-1 flex items-center justify-center min-h-[200px]">
@@ -194,8 +204,8 @@ export default function WeatherClockCard() {
             <div className="h-4 w-24 bg-muted rounded"></div>
           </div>
         </div>
-      ) : weather ? (
-        <div className="flex flex-col h-full">
+    ) : weather ? (
+        <div className="flex flex-col h-full relative z-10">
           {/* HEADER SECTION (Google Style) */}
           <div className="flex flex-col sm:flex-row justify-between mb-8 gap-6 sm:gap-4 mt-1 sm:mt-0">
             {/* Left side: Location + Icon + Temp + Details */}
@@ -245,12 +255,12 @@ export default function WeatherClockCard() {
                     return <Icon className={`w-16 h-16 shrink-0 drop-shadow-md ${color}`} />;
                   })()}
                   
-                  <div className="flex items-start">
+                  <div className={`flex items-start transition-colors duration-1000 ${tempStyle.text}`}>
                     <span className="text-[64px] font-medium tracking-tighter tabular-nums leading-[0.8] mt-1">
                       {Math.round(weather.current.temp)}
                     </span>
-                    <div className="flex flex-col ml-1.5 mt-1 text-muted-foreground font-medium text-lg">
-                      <span className="text-foreground">°C</span>
+                    <div className="flex flex-col ml-1.5 mt-1 font-medium text-lg">
+                      <span>°C</span>
                     </div>
                   </div>
                 </div>
@@ -264,8 +274,8 @@ export default function WeatherClockCard() {
             </div>
 
             {/* Right side: Clock & Weather string */}
-            <div className="flex flex-col text-left sm:text-right">
-              <span className="text-lg font-medium text-foreground">Weather</span>
+            <div className="flex flex-col text-left sm:text-right relative z-10">
+              <span className={`text-lg font-semibold tracking-tight transition-colors duration-1000 ${tempStyle.text}`}>Weather</span>
               <span className="text-sm text-muted-foreground mt-0.5">
                 {time.toLocaleDateString(undefined, { weekday: 'long' })} {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>

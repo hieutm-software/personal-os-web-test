@@ -109,9 +109,8 @@ export const createEventAction = actionClient
       // Clear Next.js cache for the calendar layout
       revalidatePath("/calendar");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to create event" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to create event" };
     }
   });
 
@@ -149,9 +148,8 @@ export const updateEventAction = actionClient
 
       revalidatePath("/calendar");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to update event" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to update event" };
     }
   });
 
@@ -173,9 +171,8 @@ export const deleteEventAction = actionClient
 
       revalidatePath("/calendar");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete event" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete event" };
     }
   });
 
@@ -198,8 +195,7 @@ export const bulkDeleteEventsAction = actionClient
 
       revalidatePath("/calendar");
       return { success: true, count: result.length };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to bulk delete events" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to bulk delete events" };
     }
   });

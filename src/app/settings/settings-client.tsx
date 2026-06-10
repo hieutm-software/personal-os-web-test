@@ -3,9 +3,12 @@
 import { logoutAction } from "@/lib/actions/auth";
 import { setLocaleAction } from "@/lib/actions/locale";
 import { changePasswordAction } from "@/lib/actions/users";
+import { getVaultItemsForMigrationAction, bulkUpdateVaultPasswordsAction } from "@/lib/actions/vault";
+import { encryptClient, decryptClient } from "@/lib/crypto-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CheckCircle2,
+  DatabaseBackup,
   Download,
   KeyRound,
   LogOut,
@@ -15,6 +18,7 @@ import {
   ShieldAlert,
   Sun,
   Upload,
+  Globe,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAction } from "next-safe-action/hooks";
@@ -22,6 +26,9 @@ import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
 
 // ============================================================================
 // SCHEMAS
@@ -40,14 +47,6 @@ const passwordSchema = z
 
 type PasswordForm = z.infer<typeof passwordSchema>;
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-// ============================================================================
-// THEME OPTION TYPE
-// ============================================================================
-
 type ThemeOption = {
   value: string;
   label: string;
@@ -58,7 +57,6 @@ type ThemeOption = {
 // COMPONENT
 // ============================================================================
 
-import { AdminDialog } from "./admin-dialog";
 import { SessionsView } from "./sessions-view";
 
 type SettingsUser = { id: string; username: string; role: "USER" | "ADMIN"; createdAt: string };
@@ -83,6 +81,15 @@ export default function SettingsClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  const [isMigratingVault, setIsMigratingVault] = useState(false);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
 
   const { execute, status, result } = useAction(changePasswordAction);
 
@@ -95,15 +102,77 @@ export default function SettingsClient({
     },
   });
 
-  const onSubmitPassword = (data: PasswordForm) => {
-    execute({
-      currentPassword: data.currentPassword,
-      newPassword: data.newPassword,
-    });
+  const onSubmitPassword = async (data: PasswordForm) => {
+    setMigrationError(null);
+    setIsMigratingVault(true);
+    
+    try {
+      // 1. Fetch vault items for migration
+      const res = await getVaultItemsForMigrationAction();
+      if (res?.data?.failure || !res?.data?.data) {
+        setMigrationError("Failed to fetch vault items for synchronization.");
+        setIsMigratingVault(false);
+        return;
+      }
+
+      const items = res.data.data;
+      const updatedItems = [];
+
+      let failedDecryptionCount = 0;
+
+      // 2. Decrypt with old password and re-encrypt with new password
+      for (const item of items) {
+        if (item.passwordEncrypted.startsWith("v2:")) {
+          try {
+            const plainPassword = await decryptClient(item.passwordEncrypted, data.currentPassword);
+            const newEncrypted = await encryptClient(plainPassword, data.newPassword);
+            updatedItems.push({ id: item.id, passwordEncrypted: newEncrypted });
+          } catch (error) {
+            // If it fails to decrypt, it was encrypted with a different password.
+            // We skip it so we don't block the account password change, but we count it.
+            failedDecryptionCount++;
+            continue;
+          }
+        } else {
+          // V1 items were already decrypted by the server action
+          const newEncrypted = await encryptClient(item.passwordEncrypted, data.newPassword);
+          updatedItems.push({ id: item.id, passwordEncrypted: newEncrypted });
+        }
+      }
+
+      // 3. Bulk update vault items
+      if (updatedItems.length > 0) {
+        const updateRes = await bulkUpdateVaultPasswordsAction({ items: updatedItems });
+        if (updateRes?.data?.failure) {
+          setMigrationError("Failed to save updated vault passwords.");
+          setIsMigratingVault(false);
+          return;
+        }
+      }
+
+      // 4. Update account password
+      execute({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+
+      // 5. Clear session storage
+      sessionStorage.removeItem("personalOSVaultKey");
+
+      if (failedDecryptionCount > 0) {
+        console.warn(`${failedDecryptionCount} vault items could not be migrated because they were encrypted with a different password.`);
+      }
+      
+    } catch (e) {
+      setMigrationError("An unexpected error occurred during password synchronization.");
+    } finally {
+      setIsMigratingVault(false);
+    }
   };
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
+    sessionStorage.removeItem("personalOSVaultKey");
     await logoutAction();
   }, []);
 
@@ -127,7 +196,7 @@ export default function SettingsClient({
       setExportStatus("Compressing...");
       const response = await fetch("/api/backup/export");
       if (!response.ok) throw new Error("Failed to export backup");
-      
+
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
 
@@ -193,9 +262,9 @@ export default function SettingsClient({
   // --------------------------------------------------------------------------
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-5xl mx-auto w-full space-y-6">
-        {/* Page title */}
+    <div className="relative p-4 md:p-6 lg:p-8 min-h-full">
+      <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-indigo-500/5 via-transparent to-transparent pointer-events-none z-0" />
+      <div className="relative z-10 max-w-5xl mx-auto w-full space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t("title")}
@@ -205,12 +274,11 @@ export default function SettingsClient({
           </p>
         </div>
 
-        {/* Card grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
           {/* ── SECURITY CARD ──────────────────────────────────────────────── */}
-          <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden">
-            <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
+          <div className="flex flex-col rounded-2xl card-aura-responsive border-premium-border shadow-2xl overflow-hidden">
+            <div className="flex flex-col space-y-1 p-5 border-b border-premium-border bg-transparent">
               <div className="flex items-center gap-2.5">
                 <div className="p-1.5 rounded-md bg-primary/10">
                   <KeyRound className="w-4 h-4 text-primary" />
@@ -222,64 +290,56 @@ export default function SettingsClient({
               <p className="text-xs text-muted-foreground pl-8">{t("changePassword")}</p>
             </div>
 
-            <div className="p-5 flex-1">
+            <div className="p-5 flex-1 shadow-[inset_0_4px_20px_rgba(0,0,0,0.02)] dark:shadow-none rounded-b-2xl">
               <form
                 onSubmit={form.handleSubmit(onSubmitPassword)}
                 className="space-y-3.5"
               >
-                <div className="space-y-1">
-                  <label className="text-xs font-medium leading-none text-foreground/80">
-                    {t("currentPassword")}
-                  </label>
-                  <input
+                <FormField
+                  label={t("currentPassword")}
+                  error={form.formState.errors.currentPassword?.message}
+                >
+                  <Input
+                    variant="form"
                     {...form.register("currentPassword")}
                     id="current-password"
                     type="password"
                     autoComplete="current-password"
-                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                   />
-                  {form.formState.errors.currentPassword && (
-                    <p className="text-xs text-destructive">
-                      {form.formState.errors.currentPassword.message}
-                    </p>
-                  )}
-                </div>
+                </FormField>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-medium leading-none text-foreground/80">
-                    {t("newPassword")}
-                  </label>
-                  <input
+                <FormField
+                  label={t("newPassword")}
+                  error={form.formState.errors.newPassword?.message}
+                >
+                  <Input
+                    variant="form"
                     {...form.register("newPassword")}
                     id="new-password"
                     type="password"
                     autoComplete="new-password"
-                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                   />
-                  {form.formState.errors.newPassword && (
-                    <p className="text-xs text-destructive">
-                      {form.formState.errors.newPassword.message}
-                    </p>
-                  )}
-                </div>
+                </FormField>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-medium leading-none text-foreground/80">
-                    {t("confirmPassword")}
-                  </label>
-                  <input
+                <FormField
+                  label={t("confirmPassword")}
+                  error={form.formState.errors.confirmPassword?.message}
+                >
+                  <Input
+                    variant="form"
                     {...form.register("confirmPassword")}
                     id="confirm-password"
                     type="password"
                     autoComplete="new-password"
-                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                   />
-                  {form.formState.errors.confirmPassword && (
-                    <p className="text-xs text-destructive">
-                      {form.formState.errors.confirmPassword.message}
-                    </p>
-                  )}
-                </div>
+                </FormField>
+
+                {migrationError && (
+                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20">
+                    <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                    {migrationError}
+                  </div>
+                )}
 
                 {result.data?.failure && (
                   <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20">
@@ -298,23 +358,23 @@ export default function SettingsClient({
                   </div>
                 )}
 
-                <button
+                <Button
                   type="submit"
-                  disabled={status === "executing"}
-                  className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={status === "executing" || isMigratingVault}
+                  className="w-full h-11"
                 >
-                  {status === "executing" ? t("updating") : t("updatePassword")}
-                </button>
+                  {status === "executing" || isMigratingVault ? "Updating & Syncing Vault..." : t("updatePassword")}
+                </Button>
               </form>
             </div>
           </div>
 
           {/* ── APPEARANCE CARD ────────────────────────────────────────────── */}
-          <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden">
-            <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
+          <div className="flex flex-col rounded-2xl card-aura-responsive border-premium-border shadow-2xl overflow-hidden">
+            <div className="flex flex-col space-y-1 p-5 border-b border-premium-border bg-transparent">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-md bg-primary/10">
-                  <Palette className="w-4 h-4 text-primary" />
+                <div className="p-1.5 rounded-md bg-indigo-500/10">
+                  <Palette className="w-4 h-4 text-indigo-400" />
                 </div>
                 <h3 className="font-semibold leading-none tracking-tight text-sm">
                   {t("appearance")}
@@ -324,94 +384,61 @@ export default function SettingsClient({
                 {t("appearanceDesc")}
               </p>
             </div>
-
-            <div className="p-5 space-y-5 flex-1">
-              {/* Theme selector — Premium toggle group */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium leading-none text-foreground/80">
-                  {tCommon("theme")}
-                </label>
-                <div className="grid grid-cols-3 gap-2 p-1 rounded-lg bg-muted/60 border border-border">
-                  {themeOptions.map(({ value, label, icon: Icon }) => (
-                    <button
-                      key={value}
-                      id={`theme-${value}`}
-                      type="button"
-                      onClick={() => setTheme(value)}
-                      className={`flex flex-col items-center gap-1.5 rounded-md py-2.5 px-1 text-xs font-medium transition-all duration-150 ${
-                        theme === value
-                          ? "bg-background text-foreground shadow-sm border border-border"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Language selector */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium leading-none text-foreground/80">
-                  {tCommon("language")}
-                </label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted/60 border border-border">
+            <div className="p-5 flex-1 flex flex-col gap-3 shadow-[inset_0_4px_20px_rgba(0,0,0,0.02)] dark:shadow-none rounded-b-2xl">
+              {themeOptions.map((opt) => {
+                const Icon = opt.icon;
+                const isSelected = mounted && theme === opt.value;
+                return (
                   <button
-                    type="button"
-                    onClick={() => setLocaleAction("en")}
-                    className={`flex items-center justify-center rounded-md py-2 text-xs font-medium transition-all duration-150 ${
-                      locale === "en"
-                        ? "bg-background text-foreground shadow-sm border border-border"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={`flex items-center gap-3 w-full p-3 rounded-xl border transition-all ${
+                      isSelected
+                        ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                        : "border-white/60 dark:border-premium-border bg-white/90 dark:bg-black/20 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-premium-text hover:bg-white shadow-sm dark:hover:bg-white/5"
                     }`}
                   >
-                    English
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 ml-auto" />}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setLocaleAction("vi")}
-                    className={`flex items-center justify-center rounded-md py-2 text-xs font-medium transition-all duration-150 ${
-                      locale === "vi"
-                        ? "bg-background text-foreground shadow-sm border border-border"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                    }`}
-                  >
-                    Tiếng Việt
-                  </button>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
 
           {/* ── BACKUP CARD ────────────────────────────────────────────────── */}
-          <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden">
-            <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
-              <h3 className="font-semibold leading-none tracking-tight text-sm">
-                Backup & Restore
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Export or restore your entire system data (Tasks, Calendar, Notes, Vault, Documents) as a ZIP file.
+          <div className="flex flex-col rounded-2xl card-aura-responsive border-premium-border shadow-2xl overflow-hidden">
+            <div className="flex flex-col space-y-1 p-5 border-b border-premium-border bg-transparent">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-md bg-green-500/10">
+                  <DatabaseBackup className="w-4 h-4 text-green-500" />
+                </div>
+                <h3 className="font-semibold leading-none tracking-tight text-sm">
+                  {t("backupRestore")}
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground pl-8">
+                {t("backupDesc")}
               </p>
             </div>
 
-            <div className="p-5 space-y-5 flex-1">
-              {/* Export */}
+            <div className="p-5 space-y-5 flex-1 shadow-[inset_0_4px_20px_rgba(0,0,0,0.02)] dark:shadow-none rounded-b-2xl">
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Download a complete backup of your Personal OS data.</p>
-                <button
+                <p className="text-xs text-muted-foreground">{t("exportDesc")}</p>
+                <Button
+                  variant="outline"
+                  className="w-full"
                   onClick={handleExport}
                   disabled={exportStatus !== null && exportStatus !== "Done!" && exportStatus !== "Export Failed"}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <Download className="w-4 h-4" />
-                  {exportStatus || "Export Full Backup"}
-                </button>
+                  {exportStatus || t("exportBackup")}
+                </Button>
               </div>
 
-              {/* Import */}
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Upload a previously exported backup .zip file to restore data.</p>
+                <p className="text-xs text-muted-foreground">{t("importDesc")}</p>
                 <input
                   type="file"
                   accept=".zip"
@@ -420,88 +447,34 @@ export default function SettingsClient({
                   className="hidden"
                   aria-label="Import configuration file"
                 />
-                <button
+                <Button
+                  variant="outline"
+                  className="w-full"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={importStatus !== null && importStatus !== "Success! Reloading..." && importStatus !== "Import Failed"}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <Upload className="w-4 h-4" />
-                  {importStatus || "Import Backup"}
-                </button>
+                  {importStatus || t("importBackup")}
+                </Button>
               </div>
             </div>
           </div>
-
-          {/* ── ACCOUNT / LOGOUT CARD ──────────────────────────────────────── */}
-          <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden md:col-span-2 lg:col-span-3">
-            <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-md bg-destructive/10">
-                  <LogOut className="w-4 h-4 text-destructive" />
-                </div>
-                <h3 className="font-semibold leading-none tracking-tight text-sm">
-                  {t("account")}
-                </h3>
-              </div>
-              <p className="text-xs text-muted-foreground pl-8">
-                {t("accountDesc")}
-              </p>
-            </div>
-
-            <div className="p-5 flex items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground max-w-md">
-                {t("logoutDesc")}
-              </p>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-5 py-2.5 text-sm font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                {isLoggingOut ? t("loggingOut") : t("logout")}
-              </button>
-            </div>
-          </div>
-
-          {/* ── ADMIN OPTIONS & SESSIONS ───────────────────────────────────────── */}
-          {isAdmin && (
-            <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden md:col-span-2 lg:col-span-3">
-              <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-md bg-primary/10">
-                    <ShieldAlert className="w-4 h-4 text-primary" />
-                  </div>
-                  <h3 className="font-semibold leading-none tracking-tight text-sm">
-                    {t("administration") || "Administration"}
-                  </h3>
-                </div>
-                <p className="text-xs text-muted-foreground pl-8">
-                  {t("adminDesc") || "Manage users and system settings"}
-                </p>
-              </div>
-
-              <div className="p-5 flex items-center gap-4">
-                <AdminDialog allUsers={allUsers} currentUserId={currentUserId} />
-              </div>
-            </div>
-          )}
 
           {/* ── LOGIN SESSIONS CARD ────────────────────────────────────────── */}
-          <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-[var(--card-shadow)] overflow-hidden md:col-span-2 lg:col-span-3">
-            <div className="flex flex-col space-y-1 p-5 border-b border-border bg-muted/30">
+          <div className="flex flex-col rounded-2xl card-aura-responsive border-premium-border shadow-2xl overflow-hidden md:col-span-2 lg:col-span-3">
+            <div className="flex flex-col space-y-1 p-5 border-b border-premium-border bg-transparent">
               <div className="flex items-center gap-2.5">
                 <h3 className="font-semibold leading-none tracking-tight text-sm">
-                  {t("loginSessions") || "Login Sessions"}
+                  {t("loginSessions")}
                 </h3>
               </div>
               <p className="text-xs text-muted-foreground">
                 {isAdmin
-                  ? "Recent login activity for all users across the platform."
-                  : "Recent login activity for your account."}
+                  ? t("sessionsAdminDesc")
+                  : t("sessionsDesc")}
               </p>
             </div>
-            <div className="p-0">
+            <div className="p-0 shadow-[inset_0_4px_20px_rgba(0,0,0,0.02)] dark:shadow-none rounded-b-2xl">
               <SessionsView sessions={allSessions} isAdmin={isAdmin} />
             </div>
           </div>

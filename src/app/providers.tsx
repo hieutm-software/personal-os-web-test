@@ -29,9 +29,8 @@ export function Providers({ children, messages, locale, timeZone }: ProvidersPro
       <NextThemesProvider
         attribute="class"
         defaultTheme="system"
-        enableSystem
-        themes={["light", "dark", "system"]}
-        disableTransitionOnChange={false}
+        enableSystem={true}
+        disableTransitionOnChange={true}
       >
         <DialogProvider>
           {children}

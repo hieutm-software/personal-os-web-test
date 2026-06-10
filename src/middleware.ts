@@ -6,15 +6,24 @@ import { NextResponse } from "next/server";
 // CONSTANTS
 // ============================================================================
 
-const PUBLIC_ROUTES = new Set(["/login"]);
+const PUBLIC_ROUTES = new Set(["/", "/login"]);
 const ADMIN_ROUTES = ["/settings/admin"];
-const BYPASS_ROUTES = ["/_next", "/favicon.ico", "/api/cron"];
+const BYPASS_ROUTES = [
+  "/_next", 
+  "/api/cron", 
+  "/favicon.ico", 
+  "/mockup.png", 
+  "/sw.js", 
+  "/manifest.json", 
+  "/icon-192x192.png", 
+  "/icon-512x512.png"
+];
 
 // ============================================================================
 // MIDDLEWARE LOGIC
 // ============================================================================
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Bypass static assets, internals, and specialized system routes (e.g., cron)
@@ -39,15 +48,15 @@ export async function proxy(request: NextRequest) {
       }
       return response;
     }
-    // Allow access to public routes (e.g., /login) if not authenticated
+    // Allow access to public routes (e.g., /login, /) if not authenticated
     return NextResponse.next();
   }
 
   // 3. Authenticated state handling
   if (payload) {
-    // Prevent authenticated users from accessing login page
-    if (isPublicRoute) {
-      return NextResponse.redirect(new URL("/", request.url));
+    // Prevent authenticated users from accessing public routes that they shouldn't see
+    if (pathname === "/login" || pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     // 4. Role-Based Access Control (RBAC) enforcement
@@ -74,7 +83,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - PWA icons and manifest
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|icon-192x192.png|icon-512x512.png|manifest.json|sw.js).*)",
   ],
 };

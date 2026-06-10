@@ -30,23 +30,27 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, generateUUID } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useDialogs } from "@/components/providers/dialog-provider";
-import { DatePicker } from "@/components/ui/date-picker";
-import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
 import { ActionButton } from "@/components/ui/action-button";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Input } from "@/components/ui/input";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Toolbar } from "@/components/ui/toolbar";
+import { useDialogs } from "@/components/providers/dialog-provider";
+import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { FormDialog } from "@/components/ui/form-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SortIcon } from "@/components/ui/sort-icon";
+import { usePendingSync } from "@/lib/hooks/use-pending-sync";
+import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
 
 // ============================================================================
 // SCHEMAS & HELPERS
@@ -137,21 +141,23 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     },
   });
 
+  // ── DEBOUNCED SYNC QUEUE ──────────────────────────────────────────────────
+  const { queueUpdate } = usePendingSync<Event>(execUpdate as unknown as (data: Event) => void);
+
   const onSubmit = (data: CreateEventForm) => {
     const fallbackDateStr = listFilterDate || selectedDateStr || format(new Date(), "yyyy-MM-dd");
     const defaultIso = `${fallbackDateStr}T00:00:00.000Z`;
 
     if (editingEvent) {
       setLocalEvents((prev) => prev.map((e) => e.id === editingEvent.id ? { ...e, title: data.title, description: data.description ?? null, startTime: editingEvent.startTime ? new Date(editingEvent.startTime).toISOString() : defaultIso, endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso } : e));
-      execUpdate({
-        id: editingEvent.id,
+      queueUpdate(editingEvent.id, {
         title: data.title,
         description: data.description ?? null,
         startTime: editingEvent.startTime ? new Date(editingEvent.startTime).toISOString() : defaultIso,
         endTime: editingEvent.endTime ? new Date(editingEvent.endTime).toISOString() : defaultIso,
       });
     } else {
-      const newId = crypto.randomUUID();
+      const newId = generateUUID();
       setLocalEvents((prev) => [{ id: newId, title: data.title, description: data.description ?? null, startTime: defaultIso, endTime: defaultIso, userId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Event, ...prev]);
       execCreate({
         id: newId,
@@ -169,13 +175,12 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     form.reset({ title: "", description: "" });
   };
 
-  // Auto-reset form on success
+  // Auto-reset form on success (removed router.refresh() to preserve cache)
   useEffect(() => {
     if (createResult.data?.success || updateResult.data?.success) {
-      router.refresh();
       setTimeout(() => { resetCreate(); resetUpdate(); }, 2000);
     }
-  }, [createResult, updateResult, resetCreate, resetUpdate, router]);
+  }, [createResult, updateResult, resetCreate, resetUpdate]);
 
   const handleEditClick = (event: Event) => {
     setEditingEvent(event);
@@ -267,14 +272,6 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
     });
   }, [localEvents, sortConfig]);
 
-  const renderSortIcon = (columnKey: "title" | "createdAt" | "date") => {
-    if (sortConfig.key !== columnKey) return null;
-    return (
-      <span className="text-muted-foreground">
-        {sortConfig.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </span>
-    );
-  };
 
   const eventsToShow = (() => {
     let result = allEventsSorted;
@@ -334,12 +331,12 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
           <CalendarDays className="w-6 h-6 text-primary" />
           {t("title")}
         </div>
-        <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
+        <div className="flex bg-black/5 dark:bg-black/20 p-1 rounded-lg border border-premium-border">
           <Button
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
             onClick={() => { setViewMode("grid"); }}
-            className={viewMode === "grid" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
+            className={viewMode === "grid" ? "active-tab-aura" : "inactive-tab-aura"}
           >
             <CalendarDays className="w-4 h-4" />
             <span className="hidden sm:inline">Calendar</span>
@@ -348,14 +345,16 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
             onClick={() => { setViewMode("list"); setListFilterDate(""); void setSelectedDateStr(null); }}
-            className={viewMode === "list" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
+            className={viewMode === "list" ? "active-tab-aura" : "inactive-tab-aura"}
           >
             <List className="w-4 h-4" />
             <span className="hidden sm:inline">Events</span>
           </Button>
         </div>
       </div>
-      <PageLayout className="rounded-xl border shadow-sm relative h-full">
+      <PageLayout className="relative h-full border-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-red-500/5 via-transparent to-transparent pointer-events-none z-0" />
+        <div className="relative z-10 h-full flex flex-col">
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <Toolbar
           search={
@@ -378,30 +377,36 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             <>
               {viewMode === "grid" && (
                 <div className="flex items-center gap-2 mr-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setCurrentMonth(new Date());
                       void setSelectedDateStr(format(new Date(), "yyyy-MM-dd"));
                     }}
-                    className="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors shrink-0"
+                    className="px-3"
                   >
                     {t("today")}
-                  </button>
+                  </Button>
                   <div className="flex items-center gap-1 bg-background border border-input rounded-md p-0.5 shadow-sm shrink-0">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                      className="p-1 hover:bg-accent rounded transition-colors"
+                      className="p-1 h-7 w-7"
                       aria-label="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                      className="p-1 hover:bg-accent rounded transition-colors"
+                      className="p-1 h-7 w-7"
                       aria-label="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -414,12 +419,14 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                       className="w-[180px] sm:w-[200px] pr-8"
                     />
                     {listFilterDate && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setListFilterDate("")}
-                        className="absolute right-2 p-1 text-muted-foreground hover:text-foreground"
+                        className="absolute right-1 p-1 h-6 w-6 text-muted-foreground hover:text-foreground"
                       >
                         <X className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <Button
@@ -509,13 +516,13 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                     className={[
                       "relative flex flex-col p-1 sm:p-2 border rounded-md transition-all text-left focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 overflow-hidden",
                       !isCurrentMonth
-                        ? "bg-muted/10 text-muted-foreground/50 border-transparent"
+                        ? "bg-transparent text-muted-foreground/50 border-transparent"
                         : isPastDay
-                        ? "bg-muted/30 text-muted-foreground/70 border-border/50 grayscale opacity-70"
-                        : "bg-background border-border",
+                        ? "bg-white/50 dark:bg-white/[0.02] text-muted-foreground/70 border-black/[0.05] dark:border-white/[0.05] grayscale opacity-70"
+                        : "bg-white/90 dark:bg-white/[0.05] text-zinc-800 dark:text-zinc-200 border-black/[0.08] dark:border-premium-border shadow-sm dark:shadow-[inset_0_1px_0_0_var(--glass-border)]",
                       isSelected
-                        ? "ring-2 ring-primary border-primary bg-primary/5"
-                        : "hover:border-primary/50",
+                        ? "ring-2 ring-indigo-500 border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20"
+                        : "hover:border-indigo-500/50 hover:bg-white hover:shadow-md dark:hover:bg-white/[0.08] dark:hover:shadow-none",
                     ].join(" ")}
                   >
                     <span
@@ -528,7 +535,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
 
                     {dayEventCount > 0 && (
                       <div className="mt-auto flex flex-wrap justify-center sm:justify-start gap-0.5 sm:gap-1 pt-1">
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 shrink-0" />
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-indigo-400 shrink-0 shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
                         <span className="hidden sm:inline-block text-[10px] font-medium text-muted-foreground leading-none">
                           {dayEventCount}
                         </span>
@@ -552,7 +559,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                   >
                     <div className="flex items-center gap-2">
                       Event Name
-                      {renderSortIcon("title")}
+                      <SortIcon active={sortConfig.key === "title"} direction={sortConfig.direction} />
                     </div>
                   </TableHead>
                   <TableHead 
@@ -561,7 +568,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                   >
                     <div className="flex items-center gap-2">
                       Date
-                      {renderSortIcon("date")}
+                      <SortIcon active={sortConfig.key === "date"} direction={sortConfig.direction} />
                     </div>
                   </TableHead>
                   <TableHead 
@@ -570,7 +577,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
                   >
                     <div className="flex items-center gap-2">
                       Created
-                      {renderSortIcon("createdAt")}
+                      <SortIcon active={sortConfig.key === "createdAt"} direction={sortConfig.direction} />
                     </div>
                   </TableHead>
                   <TableHead className="w-[120px] min-w-[120px] text-left">Actions</TableHead>
@@ -579,8 +586,12 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
               <TableBody>
                 {eventsToShow.length === 0 ? (
                   <TableRow className="hover:bg-transparent cursor-default">
-                    <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
-                      {searchQuery || listFilterDate ? "No matching events found." : t("noEvents")}
+                    <TableCell colSpan={4} className="p-0">
+                      <EmptyState 
+                        icon={CalendarDays}
+                        title={t("noEvents")}
+                        description={searchQuery || listFilterDate ? "No matching events found." : "You have no events yet."}
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -648,8 +659,8 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
         )}
       </div>
       
-      <Dialog
-        open={isCreateEventDialogOpen}
+      <FormDialog
+        isOpen={isCreateEventDialogOpen}
         onOpenChange={(open) => {
           setIsCreateEventDialogOpen(open);
           if (!open) {
@@ -658,16 +669,17 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             setViewMode("list");
           }
         }}
+        title={editingEvent ? "Edit Event" : t("createEvent")}
+        onSubmit={form.handleSubmit(onSubmit)}
+        isSubmitting={createStatus === "executing" || updateStatus === "executing"}
+        submitText={editingEvent ? "Save" : t("add")}
+        error={createResult.data?.failure || updateResult.data?.failure}
       >
-        <DialogContent aria-describedby={undefined} className="sm:max-w-2xl bg-background border-border p-6 sm:p-8 rounded-2xl shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-tight">{editingEvent ? "Edit Event" : t("createEvent")}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex flex-col mt-4">
             <div className="space-y-2">
-              <input
+              <Input
+                variant="form"
                 {...form.register("title")}
-                className="flex w-full rounded-xl border border-transparent bg-muted/30 px-4 py-4 text-base font-medium shadow-sm transition-all focus:border-primary/30 focus:bg-background focus:outline-none focus:ring-4 focus:ring-primary/10 placeholder:text-muted-foreground/60"
+                className="py-4 text-base"
                 placeholder={t("eventTitle") + "..."}
                 autoFocus
               />
@@ -681,43 +693,12 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
               <textarea
                 {...form.register("description")}
                 rows={3}
-                className="flex w-full rounded-xl border border-transparent bg-muted/30 px-4 py-3 text-sm shadow-sm resize-none transition-all focus:border-primary/30 focus:bg-background focus:outline-none focus:ring-4 focus:ring-primary/10 placeholder:text-muted-foreground/40"
+                className="flex w-full rounded-xl border border-black/[0.08] dark:border-premium-border bg-white/90 dark:bg-black/20 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 shadow-sm resize-none transition-all focus:border-indigo-500/50 focus:bg-white dark:focus:bg-premium-dark focus:outline-none focus:ring-4 focus:ring-indigo-500/10 placeholder:text-zinc-400"
                 placeholder="Optional details..."
               />
             </div>
-
-            {(createResult.data?.failure || updateResult.data?.failure) && (
-              <div className="text-sm text-destructive font-medium">
-                {createResult.data?.failure || updateResult.data?.failure}
-              </div>
-            )}
-
-            <div className="flex items-center justify-end mt-6">
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateEventDialogOpen(false);
-                    setEditingEvent(null);
-                    form.reset({ title: "", description: "" });
-                    setViewMode("list");
-                  }}
-                  className="rounded-lg border border-transparent bg-muted/50 px-5 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createStatus === "executing" || updateStatus === "executing"}
-                  className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:opacity-50"
-                >
-                  {createStatus === "executing" || updateStatus === "executing" ? t("executing") : (editingEvent ? "Save" : t("add"))}
-                </button>
-              </div>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
+        </div>
       </PageLayout>
     </div>
   );

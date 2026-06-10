@@ -13,10 +13,14 @@ import { Button } from "@/components/ui/button";
 import { ActionButton } from "@/components/ui/action-button";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useDialogs } from "@/components/providers/dialog-provider";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SortIcon } from "@/components/ui/sort-icon";
 import { PageLayout } from "@/components/ui/page-layout";
 
 import { Toolbar } from "@/components/ui/toolbar";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
+import { useRowSelection } from "@/lib/hooks/use-row-selection";
+import { TabSwitcher } from "@/components/ui/tab-switcher";
 import {
   bulkDeleteNotesAction,
   bulkPermanentDeleteNotesAction,
@@ -31,7 +35,7 @@ import {
   updateNoteAction,
 } from "@/lib/actions/docs";
 import { Note } from "@/lib/db/schema";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, generateUUID } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronUp,
@@ -68,8 +72,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [localTitle, setLocalTitle] = useState("");
   const [localContent, setLocalContent] = useState("");
-  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
-  const [lastSelectedNoteId, setLastSelectedNoteId] = useState<string | null>(null);
 
   const [sortConfig, setSortConfig] = useState<{
     key: "title" | "createdAt" | "updatedAt";
@@ -138,14 +140,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       });
   }, [localNotes, activeTab, searchQuery, sortConfig]);
 
-  const renderSortIcon = (columnKey: "title" | "createdAt" | "updatedAt") => {
-    if (sortConfig.key !== columnKey) return null;
-    return (
-      <span className="text-muted-foreground">
-        {sortConfig.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </span>
-    );
-  };
+  const { selectedIds: selectedNoteIds, setSelectedIds: setSelectedNoteIds, handleRowClick: handleNoteRowClick, clearSelection: clearNoteSelection } = useRowSelection(filteredNotes);
 
   // Clean up selected IDs if notes are deleted or filtered out
   useEffect(() => {
@@ -163,24 +158,42 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
         }
         return changed ? next : prev;
       });
-
-      setLastSelectedNoteId((prev) => {
-        if (prev && !filteredNotes.some((n) => n.id === prev)) {
-          return null;
-        }
-        return prev;
-      });
     }, 0);
-  }, [filteredNotes]);
+  }, [filteredNotes, setSelectedNoteIds]);
+
+  const draftKey = activeNoteId ? `personal-os-note-draft-${activeNoteId}` : null;
 
   // Sync active note to local state when opening dialog
   useEffect(() => {
     if (activeNote) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLocalTitle(activeNote.title);
-      setLocalContent(activeNote.content);
+      const savedDraft = draftKey ? localStorage.getItem(draftKey) : null;
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          setLocalTitle(parsed.title);
+          setLocalContent(parsed.content);
+        } catch {
+          setLocalTitle(activeNote.title);
+          setLocalContent(activeNote.content);
+        }
+      } else {
+        setLocalTitle(activeNote.title);
+        setLocalContent(activeNote.content);
+      }
     }
-  }, [activeNote]);
+  }, [activeNote, draftKey]);
+
+  // Auto-save to LocalStorage on every change
+  useEffect(() => {
+    if (activeNoteId && isDirty) {
+      const timer = setTimeout(() => {
+        if (draftKey) {
+          localStorage.setItem(draftKey, JSON.stringify({ title: localTitle, content: localContent }));
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [localTitle, localContent, activeNoteId, isDirty, draftKey]);
 
   // Auto-routing upon new note creation (switch to active tab, but do not auto-open)
   useEffect(() => {
@@ -202,7 +215,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   }, []);
 
   // Handlers
-  const handleSave = () => {
+  const handleLocalSave = () => {
     if (!activeNote || !isDirty) return;
     setLocalNotes((prev) =>
       prev.map((n) =>
@@ -211,11 +224,20 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
           : n
       )
     );
-    execUpdate({
-      id: activeNote.id,
-      title: localTitle || t("untitled"),
-      content: localContent,
-    });
+    // Note: Do NOT execUpdate here to save Server load. Just keep it in local state.
+  };
+
+  const syncToDatabase = () => {
+    if (!activeNote) return;
+    // Check if there is a real difference to prevent empty updates
+    if (activeNote.title !== localTitle || activeNote.content !== localContent) {
+      execUpdate({
+        id: activeNote.id,
+        title: localTitle || t("untitled"),
+        content: localContent,
+      });
+    }
+    if (draftKey) localStorage.removeItem(draftKey);
   };
 
   // Handle Ctrl+S for manual save and BeforeUnload for unsaved changes
@@ -224,15 +246,16 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         if (isDialogOpen && isDirty && activeNote) {
           e.preventDefault();
-          handleSave();
+          handleLocalSave(); // Just save locally when pressing Ctrl+S
         }
       }
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
+        // Sync to DB on page close/refresh
+        syncToDatabase();
+        // Still allow the browser to optionally warn, but we've fired the fetch
       }
     };
 
@@ -243,19 +266,19 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDialogOpen, isDirty, activeNote, localTitle, localContent]);
 
   const handleCloseDialog = () => {
     // Unmount save
     if (isDirty && activeNote) {
-      handleSave();
+      handleLocalSave();
+      syncToDatabase(); // Push to DB ONLY when closing
     }
     void setActiveNoteId("");
   };
 
   const handleCreate = () => {
-    const newId = crypto.randomUUID();
+    const newId = generateUUID();
     const newTitle = t("untitled");
     
     // Optimistically add to local state
@@ -368,7 +391,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     const reader = new FileReader();
     reader.onload = (event) => {
       isImportingRef.current = true;
-      const newId = crypto.randomUUID();
+      const newId = generateUUID();
       const newTitle = file.name.replace(/\.[^/.]+$/, "");
       const newContent = event.target?.result as string;
 
@@ -453,36 +476,21 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
           <FileText className="w-6 h-6 text-primary" />
           Notes
         </div>
-        <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
-          <Button
-            variant={activeTab === "active" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => {
-              setActiveTab("active");
-              setSelectedNoteIds(new Set());
-              setLastSelectedNoteId(null);
-            }}
-            className={activeTab === "active" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
-          >
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">Notes</span>
-          </Button>
-          <Button
-            variant={activeTab === "trash" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => {
-              setActiveTab("trash");
-              setSelectedNoteIds(new Set());
-              setLastSelectedNoteId(null);
-            }}
-            className={activeTab === "trash" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Trash</span>
-          </Button>
-        </div>
+        <TabSwitcher
+          tabs={[
+            { value: "active", label: t("notes") || "Notes" },
+            { value: "trash", label: t("trash") || "Trash" },
+          ]}
+          value={activeTab}
+          onValueChange={(val) => {
+            setActiveTab(val as "active" | "trash");
+            clearNoteSelection();
+          }}
+        />
       </div>
-      <PageLayout className="rounded-xl border shadow-sm relative h-full">
+      <PageLayout className="relative h-full border-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-blue-500/5 via-transparent to-transparent pointer-events-none z-0" />
+        <div className="relative z-10 h-full flex flex-col">
       <Toolbar
         search={
           <SearchBar
@@ -585,10 +593,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
       {/* ── FILE EXPLORER (TABLE VIEW) ──────────────────────────────────── */}
       <TableContainer
-        onClick={() => {
-          setSelectedNoteIds(new Set());
-          setLastSelectedNoteId(null);
-        }}
+        onClick={() => clearNoteSelection()}
       >
         <Table>
           <TableHeader onClick={(e) => e.stopPropagation()}>
@@ -599,7 +604,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
               >
                 <div className="flex items-center gap-2">
                   Name
-                  {renderSortIcon("title")}
+                  <SortIcon active={sortConfig.key === "title"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead 
@@ -608,7 +613,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
               >
                 <div className="flex items-center gap-1">
                   Modified
-                  {renderSortIcon("updatedAt")}
+                  <SortIcon active={sortConfig.key === "updatedAt"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
 
@@ -618,44 +623,19 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
           <TableBody>
             {filteredNotes.length === 0 ? (
               <TableRow className="hover:bg-transparent cursor-default">
-                <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
-                  {searchQuery ? "No matching notes found." : activeTab === "trash" ? "Trash is empty." : t("noNotes")}
+                <TableCell colSpan={4} className="p-0">
+                  <EmptyState 
+                    icon={FileText}
+                    title={t("noNotes")}
+                    description={searchQuery ? "No matching notes found." : activeTab === "trash" ? "Trash is empty." : "You have no notes yet."}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
               filteredNotes.map((note) => (
                 <TableRow
                   key={note.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (e.shiftKey) {
-                      e.preventDefault();
-                      const currentIndex = filteredNotes.findIndex(n => n.id === note.id);
-                      const anchorId = lastSelectedNoteId || filteredNotes[0]?.id;
-                      const lastIndex = filteredNotes.findIndex(n => n.id === anchorId);
-                      
-                      if (currentIndex !== -1 && lastIndex !== -1) {
-                        const start = Math.min(currentIndex, lastIndex);
-                        const end = Math.max(currentIndex, lastIndex);
-                        
-                        const next = new Set<string>();
-                        for (let i = start; i <= end; i++) {
-                          next.add(filteredNotes[i].id);
-                        }
-                        setSelectedNoteIds(next);
-                      }
-                    } else if (e.ctrlKey || e.metaKey) {
-                      e.preventDefault();
-                      const next = new Set(selectedNoteIds);
-                      if (next.has(note.id)) next.delete(note.id);
-                      else next.add(note.id);
-                      setSelectedNoteIds(next);
-                      setLastSelectedNoteId(note.id);
-                    } else {
-                      setSelectedNoteIds(new Set([note.id]));
-                      setLastSelectedNoteId(note.id);
-                    }
-                  }}
+                  onClick={(e) => handleNoteRowClick(e, note.id, filteredNotes.findIndex(n => n.id === note.id))}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     if (activeTab === "active") {
@@ -740,8 +720,8 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
       {/* ── EDITOR DIALOG ───────────────────────────────────────────────── */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background">
-          <DialogHeader className="p-4 border-b border-border bg-muted/10 shrink-0 flex flex-row items-center justify-between space-y-0">
+        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden card-aura-responsive border-premium-border rounded-2xl shadow-2xl">
+          <DialogHeader className="p-4 border-b border-premium-border bg-black/5 dark:bg-black/20 shrink-0 flex flex-row items-center justify-between space-y-0">
             <DialogTitle className="sr-only">Edit Note</DialogTitle>
             <div className="flex-1 pr-4">
               <input
@@ -757,10 +737,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
             <div className="flex items-center gap-3 shrink-0 mr-11">
               {isDirty && <span className="text-xs text-muted-foreground mr-2">Unsaved changes (Ctrl+S)</span>}
               <Button
-                size="sm"
-                variant={isDirty ? "default" : "secondary"}
-                onClick={handleSave}
+                onClick={handleLocalSave}
                 disabled={!isDirty || updateStatus === "executing"}
+                variant={isDirty ? "default" : "outline"}
+                className="gap-2 shrink-0"
               >
                 {updateStatus === "executing" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save
@@ -768,7 +748,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden relative p-4 bg-background">
+          <div className="flex-1 overflow-hidden relative p-4 bg-transparent">
             <MarkdownEditor
               value={localContent}
               onChange={(val) => {
@@ -781,6 +761,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </PageLayout>
     </div>
   );

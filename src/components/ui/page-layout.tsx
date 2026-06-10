@@ -8,7 +8,7 @@ export interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
 export function PageLayout({ className, children, ...props }: PageLayoutProps) {
   return (
     <div
-      className={cn("flex flex-col h-full bg-background overflow-hidden", className)}
+      className={cn("flex flex-col h-full card-aura-responsive overflow-hidden", className)}
       {...props}
     >
       {children}

@@ -7,7 +7,7 @@ const TableContainer = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex-1 overflow-auto bg-background", className)}
+    className={cn("flex-1 overflow-auto bg-transparent", className)}
     {...props}
   />
 ))
@@ -31,7 +31,7 @@ const TableHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn("text-xs text-muted-foreground bg-card sticky top-0 border-b border-border z-10 [&_tr]:hover:bg-transparent [&_tr]:cursor-default", className)}
+    className={cn("text-xs text-muted-foreground bg-transparent sticky top-0 border-b border-premium-border z-10 [&_tr]:hover:bg-transparent [&_tr]:cursor-default", className)}
     {...props}
   />
 ))
@@ -43,7 +43,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("divide-y divide-border relative", className)}
+    className={cn("divide-y divide-white/5 relative", className)}
     {...props}
   />
 ))
@@ -56,7 +56,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "group hover:bg-muted/30 transition-colors data-[state=selected]:bg-muted/50 cursor-pointer",
+      "group hover:bg-white/5 transition-colors data-[state=selected]:bg-white/10 cursor-pointer",
       className
     )}
     {...props}
@@ -71,7 +71,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "px-6 py-3 font-medium align-middle [&:has([role=checkbox])]:pr-0 transition-colors [&.cursor-pointer]:hover:bg-muted/50",
+      "px-6 py-3 font-medium align-middle [&:has([role=checkbox])]:pr-0 transition-colors [&.cursor-pointer]:hover:bg-black/5 dark:[&.cursor-pointer]:hover:bg-white/5 backdrop-blur-md bg-black/5 dark:bg-black/20",
       className
     )}
     {...props}

@@ -17,7 +17,9 @@ import React, { useRef, useState, useMemo, useEffect, useLayoutEffect } from "re
 import dynamic from "next/dynamic";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { useRowSelection } from "@/lib/hooks/use-row-selection";
+import { TabSwitcher } from "@/components/ui/tab-switcher";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,9 @@ import { useDialogs } from "@/components/providers/dialog-provider";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Toolbar } from "@/components/ui/toolbar";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
+import { FormDialog } from "@/components/ui/form-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SortIcon } from "@/components/ui/sort-icon";
 const DocumentViewer = dynamic(() => import("./document-viewer"), { ssr: false });
 
 const formatBytes = (bytes: number) => {
@@ -43,18 +48,6 @@ const formatBytes = (bytes: number) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
-
-const formatDate = (dateString: string | Date) => {
-  const d = new Date(dateString);
-  const MM = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const HH = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${MM}/${dd}/${yyyy} ${HH}:${mm}`;
-};
-
-
 
 type SortKey = "name" | "mimeType" | "sizeBytes" | "updatedAt";
 type SortDirection = "asc" | "desc";
@@ -84,7 +77,6 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     if (selectedDoc) {
       const updatedDoc = initialDocs.find(d => d.id === selectedDoc.id);
       if (updatedDoc && (updatedDoc.name !== selectedDoc.name || updatedDoc.updatedAt !== selectedDoc.updatedAt)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedDoc(updatedDoc);
       }
     }
@@ -104,8 +96,6 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     direction: "desc"
   });
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [isZipping, setIsZipping] = useState(false);
 
   // Modal States
@@ -240,6 +230,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     });
   }, [items, sortConfig]);
 
+  const { selectedIds, setSelectedIds, handleRowClick, clearSelection } = useRowSelection(sortedItems);
+
   const handleSort = (key: SortKey) => {
     setSortConfig((prev) => ({
       key,
@@ -247,14 +239,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     }));
   };
 
-  const renderSortIcon = (columnKey: SortKey) => {
-    if (sortConfig.key !== columnKey) return null;
-    return (
-      <span className="text-muted-foreground">
-        {sortConfig.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </span>
-    );
-  };
+  // renderSortIcon removed
 
   const uploadFilesWithHierarchy = async (files: File[]) => {
     setIsUploadingFolder(true);
@@ -370,7 +355,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     await uploadFilesWithHierarchy(Array.from(files));
   };
 
-  const handleCreateFolderSubmit = async () => {
+  const handleCreateFolderSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (newFolderName) {
       await createFolderAction({ name: newFolderName, parentId: currentFolderId });
       setCreateFolderOpen(false);
@@ -378,7 +364,8 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
     }
   };
 
-  const handleRenameFolderSubmit = async () => {
+  const handleRenameFolderSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (renameFolderName && folderToRename && renameFolderName !== folderToRename.name) {
       execRenameFolder({ id: folderToRename.id, name: renameFolderName });
       setRenameFolderOpen(false);
@@ -691,37 +678,30 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
           <FolderIcon className="w-6 h-6 text-primary" />
           Documents
         </div>
-        <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
-          <Button
-            variant={viewMode === "active" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => { setViewMode("active"); setSelectedIds(new Set()); setCurrentFolderId(null); }}
-            className={viewMode === "active" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
-          >
-            <FolderIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Documents</span>
-          </Button>
-          <Button
-            variant={viewMode === "trash" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => { setViewMode("trash"); setSelectedIds(new Set()); setCurrentFolderId(null); }}
-            className={viewMode === "trash" ? "bg-background text-foreground shadow-sm hover:bg-background" : "text-muted-foreground"}
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Trash</span>
-          </Button>
-        </div>
+        <TabSwitcher
+          tabs={[
+            { value: "active", label: "Documents" },
+            { value: "trash", label: "Trash" },
+          ]}
+          value={viewMode}
+          onValueChange={(val) => {
+            setViewMode(val as "active" | "trash");
+            clearSelection();
+            setCurrentFolderId(null);
+          }}
+        />
       </div>
       <PageLayout
         className={cn(
-          "rounded-xl border shadow-sm relative h-full",
-          isDraggingOver ? "border-primary border-2 bg-primary/5" : "border-border"
+          "relative h-full border-0 overflow-hidden",
+          isDraggingOver ? "border-primary border-2 bg-primary/5" : ""
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-      
+        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-amber-500/5 via-transparent to-transparent pointer-events-none z-0" />
+        <div className="relative z-10 h-full flex flex-col">
       <Toolbar
         search={
           <SearchBar
@@ -858,10 +838,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
 
       {/* ── FILE EXPLORER (TABLE VIEW) ──────────────────────────────────── */}
       <TableContainer
-        onClick={() => {
-          setSelectedIds(new Set());
-          setLastSelectedId(null);
-        }}
+        onClick={() => clearSelection()}
       >
         <Table>
           <TableHeader onClick={(e) => e.stopPropagation()}>
@@ -872,7 +849,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               >
                 <div className="flex items-center gap-2">
                   Name
-                  {renderSortIcon("name")}
+                  <SortIcon active={sortConfig.key === "name"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead 
@@ -881,7 +858,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               >
                 <div className="flex items-center gap-2">
                   Modified
-                  {renderSortIcon("updatedAt")}
+                  <SortIcon active={sortConfig.key === "updatedAt"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead 
@@ -890,7 +867,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               >
                 <div className="flex items-center gap-2">
                   Size
-                  {renderSortIcon("sizeBytes")}
+                  <SortIcon active={sortConfig.key === "sizeBytes"} direction={sortConfig.direction} />
                 </div>
               </TableHead>
               <TableHead className="w-[160px] min-w-[160px] text-left">Actions</TableHead>
@@ -899,8 +876,12 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
           <TableBody>
               {sortedItems.length === 0 ? (
                 <TableRow className="hover:bg-transparent cursor-default">
-                  <TableCell colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                    {searchQuery ? "No matching files found." : viewMode === "trash" ? "Trash is empty." : "This folder is empty. Drag and drop files or folders here to upload."}
+                  <TableCell colSpan={5} className="p-0">
+                    <EmptyState 
+                      icon={FolderIcon}
+                      title="No files found"
+                      description={searchQuery ? "No matching files found." : viewMode === "trash" ? "Trash is empty." : "This folder is empty. Drag and drop files or folders here to upload."}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -913,41 +894,12 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
                     onDragLeave={(e) => handleItemDragLeave(e, item)}
                     onDrop={(e) => handleItemDrop(e, item)}
                     onDragEnd={handleItemDragEnd}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (e.shiftKey) {
-                        e.preventDefault();
-                        const currentIndex = sortedItems.findIndex(d => d.id === item.id);
-                        const anchorId = lastSelectedId || sortedItems[0]?.id;
-                        const lastIndex = sortedItems.findIndex(d => d.id === anchorId);
-                        
-                        if (currentIndex !== -1 && lastIndex !== -1) {
-                          const start = Math.min(currentIndex, lastIndex);
-                          const end = Math.max(currentIndex, lastIndex);
-                          
-                          const next = new Set<string>();
-                          for (let i = start; i <= end; i++) {
-                            next.add(sortedItems[i].id);
-                          }
-                          setSelectedIds(next);
-                        }
-                      } else if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        const next = new Set(selectedIds);
-                        if (next.has(item.id)) next.delete(item.id);
-                        else next.add(item.id);
-                        setSelectedIds(next);
-                        setLastSelectedId(item.id);
-                      } else {
-                        setSelectedIds(new Set([item.id]));
-                        setLastSelectedId(item.id);
-                      }
-                    }}
+                    onClick={(e) => handleRowClick(e, item.id, sortedItems.findIndex(d => d.id === item.id))}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       if (item.type === "folder") {
                         setCurrentFolderId(item.id);
-                        setSelectedIds(new Set());
+                        clearSelection();
                         setSearchQuery("");
                       } else {
                         setSelectedDoc(item.item as Document);
@@ -1143,6 +1095,7 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
             </div>
           )}
         </div>
+        </div>
       </PageLayout>
 
       {selectedDoc && (
@@ -1155,64 +1108,46 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
       {/* --- DIALOGS --- */}
       
       {/* Create Folder Dialog */}
-      <Dialog open={createFolderOpen} onOpenChange={setCreateFolderOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Folder</DialogTitle>
-            <DialogDescription>
-              Enter a name for the new folder.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
+      <FormDialog
+        isOpen={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        title="Create New Folder"
+        onSubmit={handleCreateFolderSubmit}
+        submitText="Create"
+        submitDisabled={!newFolderName.trim()}
+      >
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Enter a name for the new folder.</p>
             <Input 
-              type="text"
+              variant="form"
               autoFocus
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreateFolderSubmit()}
               placeholder="Folder name"
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateFolderOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateFolderSubmit} disabled={!newFolderName}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* Rename Folder Dialog */}
-      <Dialog open={renameFolderOpen} onOpenChange={setRenameFolderOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Folder</DialogTitle>
-            <DialogDescription>
-              Enter a new name for &quot;{folderToRename?.name}&quot;.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
+      <FormDialog
+        isOpen={renameFolderOpen}
+        onOpenChange={setRenameFolderOpen}
+        title="Rename Folder"
+        onSubmit={handleRenameFolderSubmit}
+        submitText="Rename"
+        submitDisabled={!renameFolderName || renameFolderName === folderToRename?.name}
+      >
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Enter a new name for &quot;{folderToRename?.name}&quot;.</p>
             <Input 
-              type="text"
+              variant="form"
               autoFocus
               value={renameFolderName}
               onChange={(e) => setRenameFolderName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleRenameFolderSubmit()}
               placeholder="Folder name"
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameFolderOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameFolderSubmit} disabled={!renameFolderName || renameFolderName === folderToRename?.name}>
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
     </div>
   );
 }

@@ -46,42 +46,6 @@ export default function LoginPage() {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
 
-      {/* Top right settings */}
-      {mounted && (
-        <div className="absolute top-6 right-6 flex items-center gap-3 z-50">
-          <div className="flex items-center rounded-full border border-border bg-card/50 backdrop-blur-md p-1 shadow-sm">
-            <button
-              onClick={() => setTheme("light")}
-              className={`p-1.5 rounded-full transition-colors ${theme === "light" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Sun className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setTheme("system")}
-              className={`p-1.5 rounded-full transition-colors ${theme === "system" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setTheme("dark")}
-              className={`p-1.5 rounded-full transition-colors ${theme === "dark" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Moon className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="relative group">
-            <button className="flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card/50 backdrop-blur-md text-muted-foreground hover:text-foreground shadow-sm transition-colors">
-              <Globe className="w-4 h-4" />
-            </button>
-            <div className="absolute right-0 mt-2 w-32 rounded-lg border border-border bg-card/90 backdrop-blur-xl p-1 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <button onClick={() => setLocaleAction("en")} className="w-full text-left px-3 py-1.5 text-sm rounded-md hover:bg-muted transition-colors">English</button>
-              <button onClick={() => setLocaleAction("vi")} className="w-full text-left px-3 py-1.5 text-sm rounded-md hover:bg-muted transition-colors">Tiếng Việt</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Login Card */}
       <div className="relative w-full max-w-md rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 shadow-2xl z-10">
         <div className="mb-8 text-center">

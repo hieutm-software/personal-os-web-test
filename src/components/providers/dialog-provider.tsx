@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-
 import { Button } from "@/components/ui/button";
 
 export type ConfirmOptions = {
@@ -99,25 +98,26 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open) handleClose(false);
       }}>
-        <DialogContent className="sm:max-w-[425px] bg-background border-border shadow-2xl rounded-xl">
+        <DialogContent className="sm:max-w-md card-aura-responsive border-premium-border p-6 sm:p-8 rounded-2xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">{dialogState.title}</DialogTitle>
+            <DialogTitle className="text-2xl font-semibold tracking-tight">{dialogState.title}</DialogTitle>
             <DialogDescription>
               {dialogState.message}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-6 flex gap-3 sm:justify-end">
             {dialogState.type === "confirm" && (
               <Button
-                variant="ghost"
+                type="button"
+                variant="premium-outline"
                 onClick={() => handleClose(false)}
               >
                 {dialogState.cancelText || "Cancel"}
               </Button>
             )}
             <Button
-              variant={dialogState.variant || "default"}
               onClick={() => handleClose(true)}
+              variant={dialogState.variant === "destructive" ? "destructive" : "default"}
             >
               {dialogState.confirmText || "OK"}
             </Button>

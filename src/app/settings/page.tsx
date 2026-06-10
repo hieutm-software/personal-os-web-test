@@ -21,7 +21,6 @@ export default async function SettingsPage() {
   type SessionItem = { id: string; userId: string; device: string | null; ip: string | null; location: string | null; loginAt: string; username?: string | null };
 
   let allUsers: SettingsUser[] = [];
-  let allSessions: SessionItem[] = [];
 
   if (isAdmin) {
     allUsers = await db
@@ -32,35 +31,21 @@ export default async function SettingsPage() {
         createdAt: users.createdAt,
       })
       .from(users);
-
-    allSessions = await db
-      .select({
-        id: sessions.id,
-        userId: sessions.userId,
-        device: sessions.device,
-        ip: sessions.ip,
-        location: sessions.location,
-        loginAt: sessions.loginAt,
-        username: users.username,
-      })
-      .from(sessions)
-      .leftJoin(users, eq(sessions.userId, users.id))
-      .orderBy(desc(sessions.loginAt));
-  } else {
-    // Normal user only sees their own sessions
-    allSessions = await db
-      .select({
-        id: sessions.id,
-        userId: sessions.userId,
-        device: sessions.device,
-        ip: sessions.ip,
-        location: sessions.location,
-        loginAt: sessions.loginAt,
-      })
-      .from(sessions)
-      .where(eq(sessions.userId, session.userId))
-      .orderBy(desc(sessions.loginAt));
   }
+
+  // Everyone only sees their own sessions
+  const allSessions = await db
+    .select({
+      id: sessions.id,
+      userId: sessions.userId,
+      device: sessions.device,
+      ip: sessions.ip,
+      location: sessions.location,
+      loginAt: sessions.loginAt,
+    })
+    .from(sessions)
+    .where(eq(sessions.userId, session.userId))
+    .orderBy(desc(sessions.loginAt));
 
   return (
     <SettingsClient

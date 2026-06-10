@@ -68,11 +68,10 @@ export const createUserAction = actionClient
 
         revalidatePath("/settings/admin");
         return { success: true };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        if (error.code === "23505")
+      } catch (error) {
+        if (error instanceof Error && (error as NodeJS.ErrnoException).code === "23505")
           return { failure: "Username already exists" };
-        return { failure: error.message || "Failed to create user" };
+        return { failure: error instanceof Error ? error.message : "Failed to create user" };
       }
     },
   );
@@ -96,8 +95,7 @@ export const deleteUserAction = actionClient
 
       revalidatePath("/settings/admin");
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      return { failure: error.message || "Failed to delete user" };
+    } catch (error) {
+      return { failure: error instanceof Error ? error.message : "Failed to delete user" };
     }
   });

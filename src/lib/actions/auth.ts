@@ -57,8 +57,8 @@ export const loginAction = actionClient
       maxAge: 7 * 24 * 60 * 60, // 7 days expiration
     });
 
-    // Native Next.js server redirect to the protected dashboard (Home)
-    redirect("/");
+    // Native Next.js server redirect to the protected dashboard
+    redirect("/dashboard");
   });
 
 // ---------------------------------------------------------------------------
