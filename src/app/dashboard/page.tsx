@@ -97,8 +97,51 @@ export default async function DashboardPage() {
   const upcomingEventsDetails = await db
     .select()
     .from(events)
-    .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso)))
-    .orderBy(desc(events.createdAt));
+    .where(and(eq(events.userId, session.userId), gte(events.endTime, currentUtcIso)));
+
+  upcomingEventsDetails.sort((a, b) => {
+    const getEventDateObj = (e: any) => {
+      if (e.startTime) return new Date(e.startTime);
+      if (e.endTime) return new Date(e.endTime);
+      return new Date(8640000000000000); // Max date
+    };
+
+    const dateA = getEventDateObj(a);
+    const dateB = getEventDateObj(b);
+
+    const dayA = new Date(dateA);
+    dayA.setHours(0, 0, 0, 0);
+    const dayB = new Date(dateB);
+    dayB.setHours(0, 0, 0, 0);
+
+    if (dayA.getTime() !== dayB.getTime()) {
+      return dayA.getTime() - dayB.getTime();
+    }
+
+    const hasStartA = !!a.startTime;
+    const hasStartB = !!b.startTime;
+
+    if (hasStartA && !hasStartB) return -1;
+    if (!hasStartA && hasStartB) return 1;
+
+    if (hasStartA && hasStartB) {
+      const startA = new Date(a.startTime!).getTime();
+      const startB = new Date(b.startTime!).getTime();
+      if (startA !== startB) return startA - startB;
+    } else {
+      const hasEndA = !!a.endTime;
+      const hasEndB = !!b.endTime;
+      if (hasEndA && hasEndB) {
+        const endA = new Date(a.endTime!).getTime();
+        const endB = new Date(b.endTime!).getTime();
+        if (endA !== endB) return endA - endB;
+      }
+    }
+
+    const createA = new Date(a.createdAt).getTime();
+    const createB = new Date(b.createdAt).getTime();
+    return createA - createB;
+  });
 
   return (
     <div className="flex flex-col gap-4 max-w-[1400px] mx-auto w-full h-full overflow-hidden p-4 md:p-6">
