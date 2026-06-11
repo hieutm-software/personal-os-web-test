@@ -160,7 +160,6 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
 
     setEditingEvent(null);
     setIsCreateEventDialogOpen(false);
-    setViewMode("list");
     form.reset({ title: "", description: "", startTime: "", endTime: "" });
   };
 
@@ -172,7 +171,6 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
       startTime: event.startTime && new Date(event.startTime).getSeconds() !== 1 ? format(new Date(event.startTime), "HH:mm") : "",
       endTime: event.endTime && new Date(event.endTime).getSeconds() !== 1 ? format(new Date(event.endTime), "HH:mm") : "",
     });
-    setViewMode("list");
     setIsCreateEventDialogOpen(true);
   };
 
@@ -513,7 +511,7 @@ export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
             isOpen={isCreateEventDialogOpen}
             onOpenChange={(open) => {
               setIsCreateEventDialogOpen(open);
-              if (!open) { setEditingEvent(null); form.reset({ title: "", description: "", startTime: "", endTime: "" }); setViewMode("list"); }
+              if (!open) { setEditingEvent(null); form.reset({ title: "", description: "", startTime: "", endTime: "" }); }
             }}
             title={editingEvent ? "Edit Event" : t("createEvent")}
             onSubmit={form.handleSubmit(onSubmit)}
