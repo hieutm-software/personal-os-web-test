@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   tasks,
@@ -17,12 +16,12 @@ import fs from "fs/promises";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return new NextResponse("Unauthorized", { status: 401 });
-
-    const session = await verifySessionToken(token);
-    if (!session) return new NextResponse("Unauthorized", { status: 401 });
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const userId = session.userId;
 
@@ -91,8 +90,7 @@ export async function GET() {
     // 6. Return response
     const filename = `personal_os_backup_${new Date().toISOString().split("T")[0]}.zip`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new NextResponse(zipBuffer as any, {
+    return new NextResponse(zipBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

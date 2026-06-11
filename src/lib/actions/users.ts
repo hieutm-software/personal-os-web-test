@@ -1,6 +1,6 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,13 +19,12 @@ export const changePasswordAction = actionClient
     // Artificial delay to prevent brute-force attacks on password mutation
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     // Query user enforcing strict data isolation via ID
     const [user] = await db
@@ -60,7 +59,7 @@ export const changePasswordAction = actionClient
     await db.delete(sessions).where(eq(sessions.userId, session.userId));
 
     // Clear current cookie
-    cookieStore.delete("session");
+    (await cookies()).delete("session");
 
     return { success: true };
   });
@@ -70,12 +69,12 @@ export const verifyCurrentPasswordAction = actionClient
   .action(async ({ parsedInput: { password } }) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     const [user] = await db
       .select()

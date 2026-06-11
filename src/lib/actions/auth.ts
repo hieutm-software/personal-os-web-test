@@ -8,8 +8,8 @@ import { actionClient } from "./client";
 
 // Shared validation schema for the action and client form
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1, "Username is required").max(200, "Username too long"),
+  password: z.string().min(1, "Password is required").max(500, "Password too long"),
 });
 
 export const loginAction = actionClient

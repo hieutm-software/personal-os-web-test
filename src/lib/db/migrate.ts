@@ -25,9 +25,8 @@ async function main() {
     try {
       await sql`ALTER TABLE "users" ADD COLUMN "email" text;`;
       console.log("Added email column to users.");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      if (!e.message.includes("already exists")) {
+    } catch (e: unknown) {
+      if (e instanceof Error && !e.message.includes("already exists")) {
         console.error(e);
       }
     }
@@ -35,9 +34,8 @@ async function main() {
     try {
       await sql`ALTER TABLE "users" ADD CONSTRAINT "users_email_unique" UNIQUE("email");`;
       console.log("Added unique constraint on users email.");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      if (!e.message.includes("already exists") && !e.message.includes("multiple null")) {
+    } catch (e: unknown) {
+      if (e instanceof Error && !e.message.includes("already exists") && !e.message.includes("multiple null")) {
          console.error(e);
       }
     }

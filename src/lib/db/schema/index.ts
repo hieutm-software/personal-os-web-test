@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { AnyPgColumn, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 // ============================================================================
@@ -100,7 +100,7 @@ export const documentFolders = pgTable("document_folders", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  parentId: uuid("parent_id"), // self-referencing not supported directly in drizzle definition without some care, so just uuid
+  parentId: uuid("parent_id").references((): AnyPgColumn => documentFolders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { mode: "string", withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -115,7 +115,7 @@ export const documents = pgTable("documents", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  folderId: uuid("folder_id"),
+  folderId: uuid("folder_id").references(() => documentFolders.id, { onDelete: "set null" }),
   name: text("name").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
   mimeType: text("mime_type").notNull(),

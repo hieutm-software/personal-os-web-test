@@ -673,11 +673,17 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
       const items = Array.from(e.dataTransfer.items);
       const files: File[] = [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const traverseFileTree = (item: any, path: string = "") => {
+      const traverseFileTree = (item: unknown, path: string = "") => {
         return new Promise<void>((resolve) => {
-          if (item.isFile) {
-            item.file((file: File) => {
+          const entry = item as {
+            isFile?: boolean;
+            isDirectory?: boolean;
+            name: string;
+            file: (cb: (file: File) => void) => void;
+            createReader: () => { readEntries: (cb: (entries: unknown[]) => void) => void };
+          };
+          if (entry.isFile) {
+            entry.file((file: File) => {
               Object.defineProperty(file, 'webkitRelativePath', {
                 value: path + file.name,
                 writable: false
@@ -685,12 +691,11 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
               files.push(file);
               resolve();
             });
-          } else if (item.isDirectory) {
-            const dirReader = item.createReader();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            dirReader.readEntries(async (entries: any[]) => {
-              for (const entry of entries) {
-                await traverseFileTree(entry, path + item.name + "/");
+          } else if (entry.isDirectory) {
+            const dirReader = entry.createReader();
+            dirReader.readEntries(async (entries: unknown[]) => {
+              for (const child of entries) {
+                await traverseFileTree(child, path + entry.name + "/");
               }
               resolve();
             });

@@ -8,11 +8,6 @@ import { z } from "zod";
 import { actionClient } from "./client";
 import { checkNeonQuota } from "./quota";
 
-// ============================================================================
-// SCHEMAS
-// Max sizes: title 500 chars, content 500KB (500_000 chars). These act as
-// a hard server-side guard before data ever reaches the database.
-// ============================================================================
 
 const createNoteSchema = z.object({
   id: z.string().uuid().optional(),
@@ -34,14 +29,6 @@ const bulkDeleteNoteSchema = z.object({
   ids: z.array(z.string().uuid()),
 });
 
-// ============================================================================
-// CORE: AUTH & ISOLATION
-// ============================================================================
-
-// ============================================================================
-// ACTIONS
-// ============================================================================
-
 export const createNoteAction = actionClient
   .schema(createNoteSchema)
   .action(async ({ parsedInput }) => {
@@ -57,7 +44,6 @@ export const createNoteAction = actionClient
       const baseTitle = parsedInput.title || "Untitled";
       let finalTitle = baseTitle;
 
-      // Auto-naming logic: Query existing titles that start with baseTitle to find conflicts
       const existingNotes = await db
         .select({ title: notes.title })
         .from(notes)
@@ -110,7 +96,6 @@ export const updateNoteAction = actionClient
         }
       }
 
-      // STRICT DATA ISOLATION
       const result = await db
         .update(notes)
         .set({ ...updates, updatedAt: new Date().toISOString() })
@@ -133,7 +118,6 @@ export const deleteNoteAction = actionClient
     try {
       const session = await getSession();
 
-      // STRICT DATA ISOLATION (SOFT DELETE)
       const result = await db
         .update(notes)
         .set({ deletedAt: new Date().toISOString() })
@@ -198,7 +182,6 @@ export const emptyTrashAction = actionClient
     try {
       const session = await getSession();
 
-      // Delete all soft-deleted notes for this user
       await db
         .delete(notes)
         .where(and(eq(notes.userId, session.userId), isNotNull(notes.deletedAt)));
@@ -214,7 +197,6 @@ export const deleteAllNotesAction = actionClient
     try {
       const session = await getSession();
 
-      // Soft delete all active notes for this user
       await db
         .update(notes)
         .set({ deletedAt: new Date().toISOString() })
@@ -233,7 +215,6 @@ export const bulkDeleteNotesAction = actionClient
       const session = await getSession();
       if (ids.length === 0) return { success: true };
 
-      // Soft delete selected notes
       await db
         .update(notes)
         .set({ deletedAt: new Date().toISOString() })

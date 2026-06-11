@@ -1,39 +1,24 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { vault } from "@/lib/db/schema";
 import { z } from "zod";
 import crypto from "crypto";
 import { eq, and, inArray } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { checkNeonQuota } from "./quota";
 import { actionClient } from "./client";
 
-// ============================================================================
-// SERVER-SIDE CRYPTO UTILITIES
-//
-// The vault uses TWO separate encryption systems that co-exist intentionally:
-//
-// 1. CLIENT-SIDE E2EE (WebCrypto / AES-GCM-256 + PBKDF2) — handled in
-//    `crypto-client.ts` and `crypto-core.ts`. Passwords encrypted this way
-//    carry the prefix "v2:" (format: "v2:<saltHex>:<ivHex>:<cipherHex>").
-//    The server NEVER sees or touches the Master Password; it only stores
-//    ciphertext. This achieves true Zero-Knowledge for the password field.
-//
-// 2. SERVER-SIDE AES-256-GCM (Node.js `crypto`) — defined below. Used as a
-//    transparent encryption layer for any legacy vault items that were written
-//    before E2EE was introduced (i.e., items without the "v2:" prefix).
-//    The key is derived from JWT_SECRET. This is NOT zero-knowledge, but it
-//    still ensures passwords are never stored in plaintext.
-//
-// The "v2:" prefix is the discriminator. Action handlers check for it to
-// decide which decryption path to invoke.
-// ============================================================================
 
 function getEncryptionKey() {
+  if (process.env.VAULT_ENCRYPTION_KEY) {
+    if (process.env.VAULT_ENCRYPTION_KEY.length === 64) {
+      return Buffer.from(process.env.VAULT_ENCRYPTION_KEY, "hex");
+    }
+    return crypto.createHash("sha256").update(process.env.VAULT_ENCRYPTION_KEY).digest();
+  }
   if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is required");
-  return crypto.createHash("sha256").update(process.env.JWT_SECRET).digest();
+  return crypto.createHash("sha256").update(process.env.JWT_SECRET + "vault_fallback_salt_v1").digest();
 }
 
 function encryptPassword(text: string): string {
@@ -69,7 +54,6 @@ function decryptPassword(encryptedStr: string): string {
   }
 }
 
-// Actions
 export const createVaultItemAction = actionClient
   .schema(z.object({
     id: z.string().uuid().optional(),
@@ -79,12 +63,12 @@ export const createVaultItemAction = actionClient
     note: z.string().trim().max(5_000, "Note too long").optional(),
   }))
   .action(async ({ parsedInput: { id, platform, username, password, note } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     const approxBytes = platform.length + username.length + password.length + (note?.length || 0);
     if (approxBytes > 0) {
@@ -111,12 +95,12 @@ export const createVaultItemAction = actionClient
 export const deleteVaultItemAction = actionClient
   .schema(z.object({ id: z.string() }))
   .action(async ({ parsedInput: { id } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     await db.delete(vault).where(and(eq(vault.id, id), eq(vault.userId, session.userId)));
     return { success: true };
@@ -131,12 +115,12 @@ export const updateVaultItemAction = actionClient
     note: z.string().trim().max(5_000, "Note too long").optional().nullable(),
   }))
   .action(async ({ parsedInput: { id, platform, username, password, note } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     const approxBytes = (platform?.length || 0) + (username?.length || 0) + (password?.length || 0) + (note?.length || 0);
     if (approxBytes > 0) {
@@ -169,12 +153,12 @@ export const updateVaultItemAction = actionClient
 export const getDecryptedPasswordAction = actionClient
   .schema(z.object({ id: z.string() }))
   .action(async ({ parsedInput: { id } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     const [item] = await db.select().from(vault).where(and(eq(vault.id, id), eq(vault.userId, session.userId))).limit(1);
     if (!item) return { failure: "Not found" };
@@ -188,12 +172,12 @@ export const getDecryptedPasswordAction = actionClient
 export const bulkDeleteVaultItemsAction = actionClient
   .schema(z.object({ ids: z.array(z.string().uuid()) }))
   .action(async ({ parsedInput: { ids } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     await db.delete(vault).where(and(inArray(vault.id, ids), eq(vault.userId, session.userId)));
     return { success: true };
@@ -202,12 +186,12 @@ export const bulkDeleteVaultItemsAction = actionClient
 export const exportVaultItemsAction = actionClient
   .schema(z.object({ ids: z.array(z.string().uuid()) }))
   .action(async ({ parsedInput: { ids } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     let query = db.select().from(vault).where(eq(vault.userId, session.userId));
 
@@ -237,12 +221,12 @@ export const bulkCreateVaultItemsAction = actionClient
     }))
   }))
   .action(async ({ parsedInput: { items } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     if (items.length === 0) return { success: true };
 
@@ -268,19 +252,18 @@ export const bulkCreateVaultItemsAction = actionClient
 
 export const getVaultItemsForMigrationAction = actionClient
   .action(async () => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     const items = await db.select({
       id: vault.id,
       passwordEncrypted: vault.passwordEncrypted,
     }).from(vault).where(eq(vault.userId, session.userId));
 
-    // Decrypt V1 items automatically
     const mappedItems = items.map(item => ({
       id: item.id,
       passwordEncrypted: item.passwordEncrypted.startsWith("v2:") 
@@ -299,12 +282,12 @@ export const bulkUpdateVaultPasswordsAction = actionClient
     }))
   }))
   .action(async ({ parsedInput: { items } }) => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return { failure: "Unauthorized" };
-
-    const session = await verifySessionToken(token);
-    if (!session) return { failure: "Unauthorized" };
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return { failure: "Unauthorized" };
+    }
 
     if (items.length === 0) return { success: true };
 

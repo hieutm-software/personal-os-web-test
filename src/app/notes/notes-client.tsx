@@ -50,20 +50,19 @@ import { useQueryState } from "nuqs";
 import { useEffect, useRef, useState, useMemo, startTransition, useCallback } from "react";
 import { useOptimisticNotes } from "@/lib/hooks/use-optimistic-notes";
 
+type SortKey = "title" | "createdAt" | "updatedAt";
+
 export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const t = useTranslations("Notes");
   const { confirm } = useDialogs();
 
-  // ── useOptimistic ──────────────────────────────────────────────────────────
   const { optimisticNotes, mutate } = useOptimisticNotes(initialNotes);
 
-  // nuqs: activeNoteId — shallow to avoid blocking main thread
-  const [activeNoteId, setActiveNoteId] = useQueryState("id", {
+  const [activeNoteId, setActiveNoteId] = useQueryState("note", {
     defaultValue: "",
     shallow: true,
   });
 
-  // Local UI state (not data)
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"active" | "trash">("active");
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
@@ -71,11 +70,11 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const [localContent, setLocalContent] = useState("");
 
   const [sortConfig, setSortConfig] = useState<{
-    key: "title" | "createdAt" | "updatedAt";
+    key: SortKey;
     direction: "asc" | "desc";
   }>({ key: "updatedAt", direction: "desc" });
 
-  const handleSort = (key: "title" | "createdAt" | "updatedAt") => {
+  const handleSort = (key: SortKey) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
@@ -84,7 +83,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── SERVER ACTIONS (background, executeAsync for await) ───────────────────
   const { executeAsync: execCreate } = useAction(createNoteAction);
   const { executeAsync: execUpdate } = useAction(updateNoteAction);
   const { executeAsync: execDelete } = useAction(deleteNoteAction);
@@ -97,15 +95,13 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   const { executeAsync: execBulkRestore } = useAction(bulkRestoreNotesAction);
   const { executeAsync: execBulkPermanentDelete } = useAction(bulkPermanentDeleteNotesAction);
 
-  // ── Derived: find active note from optimistic state ───────────────────────
-  const activeNote = optimisticNotes.find((n) => n.id === activeNoteId);
+  const activeNote = useMemo(() => optimisticNotes.find((n) => n.id === activeNoteId), [optimisticNotes, activeNoteId]);
   const isDialogOpen = Boolean(activeNoteId && activeNote);
   const isDirty = activeNote
     ? localTitle !== activeNote.title || localContent !== activeNote.content
     : false;
 
-  // ── Filtered + sorted list ────────────────────────────────────────────────
-  const filteredNotes = useMemo(() => {
+  const sortedAndFilteredNotes = useMemo(() => {
     return optimisticNotes
       .filter((n) => (activeTab === "active" ? !n.deletedAt : n.deletedAt))
       .filter((n) => {
@@ -144,53 +140,44 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     setSelectedIds: setSelectedNoteIds,
     handleRowClick: handleNoteRowClick,
     clearSelection: clearNoteSelection,
-  } = useRowSelection(filteredNotes);
+  } = useRowSelection(sortedAndFilteredNotes);
 
-  // Clean up selection when items disappear
+  const validSelectedNoteIds = useMemo(() => {
+    const validIds = new Set(sortedAndFilteredNotes.map((n) => n.id));
+    const next = new Set<string>();
+    for (const id of selectedNoteIds) {
+      if (validIds.has(id)) next.add(id);
+    }
+    return next;
+  }, [sortedAndFilteredNotes, selectedNoteIds]);
+
   useEffect(() => {
-    setTimeout(() => {
-      setSelectedNoteIds((prev) => {
-        const validIds = new Set(filteredNotes.map((n) => n.id));
-        const next = new Set<string>();
-        let changed = false;
-        for (const id of prev) {
-          if (validIds.has(id)) next.add(id);
-          else changed = true;
-        }
-        return changed ? next : prev;
-      });
-    }, 0);
-  }, [filteredNotes, setSelectedNoteIds]);
+    if (validSelectedNoteIds.size !== selectedNoteIds.size) {
+      setSelectedNoteIds(validSelectedNoteIds);
+    }
+  }, [validSelectedNoteIds, selectedNoteIds.size, setSelectedNoteIds]);
 
   const draftKey = activeNoteId ? `personal-os-note-draft-${activeNoteId}` : null;
 
-  // Sync active note into editor state when dialog opens
   useEffect(() => {
     if (activeNote) {
       const savedDraft = draftKey ? localStorage.getItem(draftKey) : null;
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setLocalTitle(parsed.title);
-           
           setLocalContent(parsed.content);
         } catch {
-           
           setLocalTitle(activeNote.title);
-           
           setLocalContent(activeNote.content);
         }
       } else {
-         
         setLocalTitle(activeNote.title);
-         
         setLocalContent(activeNote.content);
       }
     }
   }, [activeNote, draftKey]);
 
-  // Auto-save draft to localStorage
   useEffect(() => {
     if (activeNoteId && isDirty) {
       const timer = setTimeout(() => {
@@ -202,14 +189,11 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     }
   }, [localTitle, localContent, activeNoteId, isDirty, draftKey]);
 
-  // Preload MarkdownEditor chunk
   useEffect(() => {
     const t = setTimeout(() => { import("@/components/editor/markdown"); }, 1000);
     return () => clearTimeout(t);
   }, []);
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
-   
   const getUniqueTitle = useCallback((baseTitle: string, excludeId?: string) => {
     const title = baseTitle || t("untitled");
     let finalTitle = title;
@@ -226,12 +210,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     return finalTitle;
   }, [optimisticNotes, t]);
 
-   
   const handleLocalSave = useCallback(() => {
     if (!activeNote || !isDirty) return;
     const uniqueTitle = getUniqueTitle(localTitle, activeNote.id);
     if (uniqueTitle !== localTitle) setLocalTitle(uniqueTitle);
-    // Local-only optimistic update (no server round-trip, no router.refresh needed)
     mutate(
       { type: "update", id: activeNote.id, patch: { title: uniqueTitle, content: localContent, updatedAt: new Date().toISOString() } },
       async () => ({ success: true }),
@@ -239,7 +221,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     );
   }, [activeNote, isDirty, localTitle, getUniqueTitle, localContent, mutate]);
 
-   
   const syncToDatabase = useCallback(() => {
     if (!activeNote) return;
     const uniqueTitle = getUniqueTitle(localTitle, activeNote.id);
@@ -252,7 +233,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     if (draftKey) localStorage.removeItem(draftKey);
   }, [activeNote, localTitle, getUniqueTitle, localContent, mutate, execUpdate, draftKey]);
 
-  // Ctrl+S and beforeunload handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -275,15 +255,12 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
   const handleCloseDialog = () => {
     if (isDirty && activeNote) {
-      // syncToDatabase also updates title/content in the optimistic state,
-      // so calling handleLocalSave() here would be a duplicate mutation.
       syncToDatabase();
     }
     startTransition(() => { void setActiveNoteId(""); });
   };
 
-  // ── CRUD HANDLERS ─────────────────────────────────────────────────────────
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const newId = generateUUID();
     const newTitle = getUniqueTitle(t("untitled"));
     setActiveTab("active");
@@ -438,9 +415,9 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
   };
 
   const handleDownload = async () => {
-    let filesToDownload = filteredNotes;
+    let filesToDownload = sortedAndFilteredNotes;
     if (selectedNoteIds.size > 0) {
-      filesToDownload = filteredNotes.filter((n) => selectedNoteIds.has(n.id));
+      filesToDownload = sortedAndFilteredNotes.filter((n) => selectedNoteIds.has(n.id));
     }
     if (filesToDownload.length === 0) return;
     try {
@@ -473,7 +450,6 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
     }
   };
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center justify-between px-2">
@@ -518,7 +494,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
 
                 {activeTab === "active" ? (
                   <div key="active-buttons" className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={filteredNotes.length === 0}
+                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={sortedAndFilteredNotes.length === 0}
                       title={selectedNoteIds.size > 0 ? `Export (${selectedNoteIds.size})` : "Export All"}>
                       <Download className="w-4 h-4" />
                       <span className="hidden sm:inline">
@@ -526,7 +502,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                       </span>
                     </Button>
                     <Button variant="destructive-outline" size="sm" onClick={handleDeleteAll}
-                      disabled={filteredNotes.length === 0}
+                      disabled={sortedAndFilteredNotes.length === 0}
                       title={selectedNoteIds.size > 0 ? `Delete (${selectedNoteIds.size})` : "Delete All"}>
                       <Trash2 className="w-4 h-4" />
                       <span className="hidden sm:inline">
@@ -541,7 +517,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                 ) : (
                   <div key="trash-buttons" className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleRestoreAll}
-                      disabled={filteredNotes.length === 0}
+                      disabled={sortedAndFilteredNotes.length === 0}
                       title={selectedNoteIds.size > 0 ? `Restore (${selectedNoteIds.size})` : "Restore All"}
                       className="hover:text-emerald-500 hover:bg-emerald-500/10">
                       <RefreshCcw className="w-4 h-4" />
@@ -550,7 +526,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                       </span>
                     </Button>
                     <Button variant="destructive-outline" size="sm" onClick={handleEmptyTrash}
-                      disabled={filteredNotes.length === 0}
+                      disabled={sortedAndFilteredNotes.length === 0}
                       title={selectedNoteIds.size > 0 ? `Delete (${selectedNoteIds.size})` : "Empty Trash"}>
                       <Trash2 className="w-4 h-4" />
                       <span className="hidden sm:inline">
@@ -577,7 +553,7 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredNotes.length === 0 ? (
+                {sortedAndFilteredNotes.length === 0 ? (
                   <TableRow className="hover:bg-transparent cursor-default">
                     <TableCell colSpan={4} className="p-0">
                       <EmptyState
@@ -588,10 +564,10 @@ export function NotesClient({ initialNotes }: { initialNotes: Note[] }) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredNotes.map((note) => (
+                  sortedAndFilteredNotes.map((note) => (
                     <TableRow
                       key={note.id}
-                      onClick={(e) => handleNoteRowClick(e, note.id, filteredNotes.findIndex((n) => n.id === note.id))}
+                      onClick={(e) => handleNoteRowClick(e, note.id, sortedAndFilteredNotes.findIndex((n) => n.id === note.id))}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
                         if (activeTab === "active") {

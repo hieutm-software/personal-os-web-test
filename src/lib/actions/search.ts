@@ -2,9 +2,8 @@
 
 import { db } from "@/lib/db";
 import { tasks, notes, documents } from "@/lib/db/schema";
-import { ilike, or, eq, and, isNull } from "drizzle-orm";
-import { verifySessionToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { ilike, or, eq, and, isNull, sql } from "drizzle-orm";
+import { getSession } from "@/lib/auth";
 import { z } from "zod";
 import { actionClient } from "./client";
 
@@ -16,11 +15,7 @@ export const globalSearchAction = actionClient
   .schema(searchSchema)
   .action(async ({ parsedInput: { query } }) => {
     try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get("session")?.value;
-      if (!token) throw new Error("Unauthorized");
-      const session = await verifySessionToken(token);
-      if (!session) throw new Error("Unauthorized");
+      const session = await getSession();
 
       const searchPattern = `%${query}%`;
 
@@ -53,8 +48,7 @@ export const globalSearchAction = actionClient
             or(
               ilike(notes.title, searchPattern),
               ilike(notes.content, searchPattern),
-              // Fallback for empty titles that should match 'untitled'
-            query.toLowerCase().includes("uni") ? eq(notes.title, "") : eq(notes.title, "____impossible_fallback____")
+              ilike(sql`COALESCE(NULLIF(${notes.title}, ''), 'Untitled')`, searchPattern)
             )
           )
         )

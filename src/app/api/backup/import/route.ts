@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   tasks,
@@ -18,12 +17,12 @@ import fs from "fs/promises";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-    if (!token) return new NextResponse("Unauthorized", { status: 401 });
-
-    const session = await verifySessionToken(token);
-    if (!session) return new NextResponse("Unauthorized", { status: 401 });
+    let session;
+    try {
+      session = await getSession();
+    } catch {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const userId = session.userId;
 
@@ -58,8 +57,6 @@ export async function POST(req: NextRequest) {
       vault: bVault,
     } = backupData.data;
 
-    // 2. Wipe existing data for this user to avoid conflicts
-    // Order matters for foreign keys (if any self-references existed, but here mostly just to userId)
     await db.delete(tasks).where(eq(tasks.userId, userId));
     await db.delete(events).where(eq(events.userId, userId));
     await db.delete(notes).where(eq(notes.userId, userId));
@@ -67,26 +64,23 @@ export async function POST(req: NextRequest) {
     await db.delete(documentFolders).where(eq(documentFolders.userId, userId));
     await db.delete(vault).where(eq(vault.userId, userId));
 
-    // 3. Insert Backup Data
-    // We insert in batches or all at once if not too large.
-    // Filtering to ensure they belong to this user (security check)
     if (bTasks && bTasks.length > 0) {
-      await db.insert(tasks).values(bTasks.map((t: any) => ({ ...t, userId })));
+      await db.insert(tasks).values(bTasks.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
     if (bEvents && bEvents.length > 0) {
-      await db.insert(events).values(bEvents.map((t: any) => ({ ...t, userId })));
+      await db.insert(events).values(bEvents.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
     if (bNotes && bNotes.length > 0) {
-      await db.insert(notes).values(bNotes.map((t: any) => ({ ...t, userId })));
+      await db.insert(notes).values(bNotes.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
     if (bDocFolders && bDocFolders.length > 0) {
-      await db.insert(documentFolders).values(bDocFolders.map((t: any) => ({ ...t, userId })));
+      await db.insert(documentFolders).values(bDocFolders.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
     if (bDocs && bDocs.length > 0) {
-      await db.insert(documents).values(bDocs.map((t: any) => ({ ...t, userId })));
+      await db.insert(documents).values(bDocs.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
     if (bVault && bVault.length > 0) {
-      await db.insert(vault).values(bVault.map((t: any) => ({ ...t, userId })));
+      await db.insert(vault).values(bVault.map((t: Record<string, unknown>) => ({ ...t, userId })));
     }
 
     // 4. Restore Physical Files

@@ -7,10 +7,6 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { actionClient } from "./client";
 
-// ============================================================================
-// SEND OTP ACTION
-// ============================================================================
-
 const sendOtpSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
@@ -56,10 +52,6 @@ export const sendOtpAction = actionClient
       return { failure: "Failed to send verification email. Please try again." };
     }
   });
-
-// ============================================================================
-// VERIFY AND SIGNUP ACTION
-// ============================================================================
 
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -122,9 +114,8 @@ export const signupAction = actionClient
       await db.delete(verificationTokens).where(eq(verificationTokens.id, tokenRecord.id));
 
       return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.code === '23505') { // Unique violation in Postgres
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === '23505') { // Unique violation in Postgres
          return { failure: "Email or username is already taken" };
       }
       console.error("Signup error:", error);

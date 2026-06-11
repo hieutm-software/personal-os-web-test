@@ -49,7 +49,6 @@ interface WeatherData {
   location: string;
 }
 
-let geoPromise: Promise<GeolocationPosition | null> | null = null;
 
 export default function WeatherClockCard() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -63,7 +62,7 @@ export default function WeatherClockCard() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
+  const geoPromiseRef = useRef<Promise<GeolocationPosition | null> | null>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -105,12 +104,12 @@ export default function WeatherClockCard() {
           }
 
           if (!useSaved) {
-            if (!geoPromise) {
-              geoPromise = new Promise<GeolocationPosition>((res, rej) => {
+            if (!geoPromiseRef.current) {
+              geoPromiseRef.current = new Promise<GeolocationPosition>((res, rej) => {
                 navigator.geolocation.getCurrentPosition(res, rej, { maximumAge: 60000, timeout: 15000 });
               }).catch(() => null);
             }
-            const pos = await geoPromise;
+            const pos = await geoPromiseRef.current;
             
             if (pos) {
               lat = pos.coords.latitude;

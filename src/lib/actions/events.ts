@@ -55,14 +55,6 @@ const bulkDeleteEventsSchema = z.object({
   ids: z.array(z.string().uuid()).min(1, "At least one event ID is required"),
 });
 
-// ============================================================================
-// CORE: AUTH & ISOLATION
-// ============================================================================
-
-// ============================================================================
-// ACTIONS
-// ============================================================================
-
 export const createEventAction = actionClient
   .schema(createEventSchema)
   .action(async ({ parsedInput }) => {

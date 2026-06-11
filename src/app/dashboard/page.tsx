@@ -53,15 +53,15 @@ export default async function DashboardPage() {
   // Fetch all stats in a single Promise.all batch.
   // upcomingEventsDetails is fetched once and sorted by SQL — its .length
   // is reused for the stat card count, eliminating the duplicate query.
-  const [openTasksList, completedTasksList, upcomingEventsDetails, allNotesList] = await Promise.all([
+  const [tasksCounts, upcomingEventsDetails, allNotesList] = await Promise.all([
     db
-      .select({ id: tasks.id })
+      .select({
+        status: tasks.status,
+        count: sql<number>`cast(count(*) as integer)`,
+      })
       .from(tasks)
-      .where(and(eq(tasks.userId, session.userId), ne(tasks.status, "COMPLETED"))),
-    db
-      .select({ id: tasks.id })
-      .from(tasks)
-      .where(and(eq(tasks.userId, session.userId), eq(tasks.status, "COMPLETED"))),
+      .where(eq(tasks.userId, session.userId))
+      .groupBy(tasks.status),
     // ORDER BY in SQL replaces the 40-line JS sort that used `any` types.
     // Priority: startTime ASC (events with a start time first), then endTime ASC.
     db
@@ -76,8 +76,16 @@ export default async function DashboardPage() {
   ]);
 
   // Derive stats from the single events query (no separate count query needed)
-  const openTasksCount = openTasksList.length;
-  const completedTasksCount = completedTasksList.length;
+  let openTasksCount = 0;
+  let completedTasksCount = 0;
+  for (const row of tasksCounts) {
+    if (row.status === "COMPLETED") {
+      completedTasksCount += Number(row.count);
+    } else {
+      openTasksCount += Number(row.count);
+    }
+  }
+
   const totalTasksCount = openTasksCount + completedTasksCount;
   const taskCompletionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
   const upcomingEventsCount = upcomingEventsDetails.length;
@@ -92,7 +100,8 @@ export default async function DashboardPage() {
         role: users.role,
         createdAt: users.createdAt,
       })
-      .from(users);
+      .from(users)
+      .limit(100);
   }
 
   return (
@@ -128,7 +137,6 @@ export default async function DashboardPage() {
             <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium mb-1">Total Tasks</p>
             <p className="text-4xl font-semibold tracking-tight text-premium-text">{openTasksCount}</p>
           </div>
-          <p className="text-xs text-zinc-500 font-medium mt-1">12 due today</p>
         </div>
 
         {/* Upcoming Events (Replacing Overdue) */}

@@ -1,11 +1,10 @@
 "use server";
 
-import { verifySessionToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { actionClient } from "./client";
 
@@ -13,12 +12,8 @@ import { actionClient } from "./client";
 // CORE: Sudo Validation Logic
 // ============================================================================
 async function verifySudo(sudoPasswordPlain: string) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  if (!token) throw new Error("Unauthorized");
-
-  const session = await verifySessionToken(token);
-  if (!session || session.role !== "ADMIN")
+  const session = await getSession();
+  if (session.role !== "ADMIN")
     throw new Error("Forbidden: Insufficient privileges");
 
   const [adminUser] = await db

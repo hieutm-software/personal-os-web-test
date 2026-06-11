@@ -28,16 +28,6 @@ const bulkDeleteTasksSchema = z.object({
   ids: z.array(z.string().uuid()).min(1, "At least one task ID is required"),
 });
 
-// ============================================================================
-// CORE: AUTH & ISOLATION
-// ============================================================================
-
-// ============================================================================
-// ACTIONS
-// NOTE: revalidatePath removed — optimistic UI keeps state in sync client-side.
-// Server cache is refreshed on next navigation via Next.js default behavior.
-// ============================================================================
-
 export const createTaskAction = actionClient
   .schema(createTaskSchema)
   .action(async ({ parsedInput }) => {

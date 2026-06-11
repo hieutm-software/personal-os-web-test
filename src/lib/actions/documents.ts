@@ -9,11 +9,7 @@ import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import { actionClient } from "./client";
 
-// ---------------------------------------------------------------------------
 // Extracts the Supabase storage path from a document URL.
-// Handles both the secure local API format (/api/files?path=...) and the
-// legacy public bucket format (fallback).
-// ---------------------------------------------------------------------------
 const extractSupabasePath = (url: string) => {
   // Handle the secure local API format
   if (url.startsWith("/api/files?path=")) {
@@ -59,8 +55,6 @@ async function deleteStorageFile(url: string): Promise<void> {
   if (supabasePath) {
     await withTimeout(supabase.storage.from("personal-os-bucket").remove([supabasePath]));
   }
-  // NOTE: Local filesystem fallback removed — Vercel serverless is read-only.
-  // All files are stored in Supabase Storage in production.
 }
 
 // ============================================================================
@@ -166,7 +160,6 @@ export const deleteDocumentAction = actionClient
       const [doc] = await db.select().from(documents).where(and(eq(documents.id, id), eq(documents.userId, session.userId))).limit(1);
       if (!doc) return { failure: "Not found" };
 
-      // Defense-in-depth: bind userId even though ownership was checked above.
       await db.update(documents)
         .set({ deletedAt: new Date().toISOString() })
         .where(and(eq(documents.id, id), eq(documents.userId, session.userId)));
@@ -264,7 +257,6 @@ export const updateDocumentContentAction = actionClient
         return { failure: "Failed to update document content in storage" };
       }
 
-      // Defense-in-depth: bind userId even though ownership was checked above.
       await db.update(documents)
         .set({
           sizeBytes: buffer.length,
@@ -401,13 +393,13 @@ export const permanentlyDeleteDocumentsAction = actionClient
 
       const docsToDelete = await db.select().from(documents).where(and(inArray(documents.id, ids), eq(documents.userId, session.userId)));
 
-      for (const doc of docsToDelete) {
-        try {
-          await deleteStorageFile(doc.url);
-        } catch (e) {
-          console.error("Failed to delete document file", e);
-        }
-      }
+      await Promise.allSettled(
+        docsToDelete.map((doc) =>
+          deleteStorageFile(doc.url).catch((e) =>
+            console.error("Failed to delete document file", e)
+          )
+        )
+      );
 
       await db.delete(documents).where(and(inArray(documents.id, ids), eq(documents.userId, session.userId)));
       revalidatePath("/documents");
@@ -427,13 +419,13 @@ export const permanentlyDeleteFoldersAction = actionClient
 
       const docsToDelete = await db.select().from(documents).where(and(inArray(documents.folderId, ids), eq(documents.userId, session.userId)));
 
-      for (const doc of docsToDelete) {
-        try {
-          await deleteStorageFile(doc.url);
-        } catch (e) {
-          console.error("Failed to delete document file in folder", e);
-        }
-      }
+      await Promise.allSettled(
+        docsToDelete.map((doc) =>
+          deleteStorageFile(doc.url).catch((e) =>
+            console.error("Failed to delete document file in folder", e)
+          )
+        )
+      );
 
       await db.delete(documents).where(and(inArray(documents.folderId, ids), eq(documents.userId, session.userId)));
       await db.delete(documentFolders).where(and(inArray(documentFolders.id, ids), eq(documentFolders.userId, session.userId)));
@@ -451,16 +443,16 @@ export const emptyDocumentsTrashAction = actionClient
 
       const docsToDelete = await db.select().from(documents).where(and(isNotNull(documents.deletedAt), eq(documents.userId, session.userId)));
 
-      for (const doc of docsToDelete) {
-        try {
-          await deleteStorageFile(doc.url);
-        } catch (e) {
-          console.error("Failed to delete document file from trash", e);
-        }
-      }
+      await Promise.allSettled(
+        docsToDelete.map((doc) =>
+          deleteStorageFile(doc.url).catch((e) =>
+            console.error("Failed to delete document file from trash", e)
+          )
+        )
+      );
 
       await db.delete(documents).where(and(isNotNull(documents.deletedAt), eq(documents.userId, session.userId)));
-      await db.delete(documentFolders).where(and(isNotNull(documentFolders.deletedAt), eq(documents.userId, session.userId)));
+      await db.delete(documentFolders).where(and(isNotNull(documentFolders.deletedAt), eq(documentFolders.userId, session.userId)));
 
       revalidatePath("/documents");
       return { success: true };
