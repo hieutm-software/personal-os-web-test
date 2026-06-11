@@ -1,17 +1,9 @@
-import "react";
+import type { AriaAttributes, DOMAttributes } from "react";
 
 declare module "react" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     webkitdirectory?: string;
     directory?: string;
-  }
-}
-
-declare module "serwist" {
-  export type PrecacheEntry = any;
-  export type SerwistGlobalConfig = any;
-  export class Serwist {
-    constructor(config: any);
-    addEventListeners(): void;
   }
 }
