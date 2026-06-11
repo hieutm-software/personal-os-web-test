@@ -8,9 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionClient } from "./client";
 
-// ============================================================================
 // CORE: Sudo Validation Logic
-// ============================================================================
 async function verifySudo(sudoPasswordPlain: string) {
   const session = await getSession();
   if (session.role !== "ADMIN")
@@ -36,9 +34,7 @@ async function verifySudo(sudoPasswordPlain: string) {
   return adminUser;
 }
 
-// ============================================================================
 // ACTIONS
-// ============================================================================
 
 const createUserSchema = z.object({
   username: z.string().min(1, "Username is required").regex(/^[a-zA-Z0-9_]+$/, "Username must contain only English letters, numbers, and underscores without accents or spaces"),

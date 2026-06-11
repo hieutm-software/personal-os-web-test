@@ -50,9 +50,7 @@ import { SortIcon } from "@/components/ui/sort-icon";
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/data-table";
 import { useOptimisticEvents } from "@/lib/hooks/use-optimistic-events";
 
-// ============================================================================
 // SCHEMAS & HELPERS
-// ============================================================================
 
 const createEventSchema = z.object({
   title: z.string().min(1, "Required"),
@@ -68,9 +66,7 @@ type CreateEventForm = z.infer<typeof createEventSchema>;
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
-// ============================================================================
 // COMPONENT
-// ============================================================================
 
 export function CalendarClient({ initialEvents }: { initialEvents: Event[] }) {
   const t = useTranslations("Calendar");

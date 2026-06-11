@@ -5,10 +5,8 @@ import { subDays } from "date-fns";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// ============================================================================
 // CRON JOB: Data Retention Scanner
 // Executes hourly via Vercel Cron. Deletes old data (e.g. tasks/events > 30 days, notes in trash > 14 days).
-// ============================================================================
 
 export async function GET(request: NextRequest) {
   // 1. Security Authorization: Validate the invocation comes from Vercel

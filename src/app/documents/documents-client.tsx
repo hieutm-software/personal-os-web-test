@@ -837,8 +837,6 @@ export default function DocumentsClient({ initialDocs, initialFolders }: { initi
                 <input
                   type="file"
                   multiple
-
-                  // @ts-expect-error react types don't support webkitdirectory
                   webkitdirectory=""
                   directory=""
                   ref={folderInputRef}

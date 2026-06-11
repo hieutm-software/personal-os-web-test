@@ -1,19 +1,12 @@
 import { AnyPgColumn, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
-// ============================================================================
-// ENUMS
-// ============================================================================
 export const roleEnum = pgEnum("role", ["USER", "ADMIN"]);
 export const taskStatusEnum = pgEnum("task_status", [
   "PENDING",
   "IN_PROGRESS",
   "COMPLETED",
 ]);
-
-// ============================================================================
-// TABLES
-// ============================================================================
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -159,10 +152,6 @@ export const sessions = pgTable("sessions", {
     .notNull(),
 });
 
-// ============================================================================
-// ZOD SCHEMAS (Validation)
-// ============================================================================
-
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 
@@ -186,10 +175,6 @@ export const selectVaultSchema = createSelectSchema(vault);
 
 export const insertSessionSchema = createInsertSchema(sessions);
 export const selectSessionSchema = createSelectSchema(sessions);
-
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

@@ -12,9 +12,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// ============================================================================
 // SCHEMAS
-// ============================================================================
 
 const emailSchema = z.object({
   email: z.string().email("Invalid email address"),

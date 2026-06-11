@@ -11,9 +11,7 @@ import markedFootnote from "marked-footnote";
 import markedKatex from "marked-katex-extension";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 interface MarkdownEditorProps {
   value: string;
@@ -24,9 +22,7 @@ interface MarkdownEditorProps {
   onTabChange?: (tab: "write" | "preview") => void;
 }
 
-// ============================================================================
 // COMPONENT
-// ============================================================================
 
 export function MarkdownEditor({
   value,

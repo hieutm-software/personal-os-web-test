@@ -46,9 +46,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useOptimisticTasks } from "@/lib/hooks/use-optimistic-tasks";
 
-// ============================================================================
 // SCHEMAS & TYPES
-// ============================================================================
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Required"),
@@ -60,9 +58,7 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 type SortKey = "title" | "createdAt" | "status";
 type SortDirection = "asc" | "desc";
 
-// ============================================================================
 // CONSTANTS & UTILS
-// ============================================================================
 
 const STATUS_STYLES: Record<Task["status"], string> = {
   PENDING: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
@@ -76,9 +72,7 @@ const NEXT_STATUS_MAP: Record<Task["status"], Task["status"]> = {
   COMPLETED: "PENDING",
 };
 
-// ============================================================================
 // COMPONENT
-// ============================================================================
 
 export function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const t = useTranslations("Tasks");

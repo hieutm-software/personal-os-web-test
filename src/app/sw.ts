@@ -1,7 +1,5 @@
 import { defaultCache } from "@serwist/next/worker";
-// @ts-expect-error - Serwist type mismatch
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-// @ts-expect-error - Serwist type mismatch
 import { Serwist } from "serwist";
 
 // This declares the value of `injectionPoint` to TypeScript.

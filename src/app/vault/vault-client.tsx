@@ -62,9 +62,7 @@ import { useRowSelection } from "@/lib/hooks/use-row-selection";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 type VaultItemData = {
   id: string;
@@ -92,9 +90,7 @@ type FormValues = z.infer<typeof formSchema>;
 type SortKey = "platform" | "username" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
-// ============================================================================
 // COMPONENT
-// ============================================================================
 
 export default function VaultClient({ initialItems }: { initialItems: VaultItemData[] }) {
   const { alert, confirm } = useDialogs();

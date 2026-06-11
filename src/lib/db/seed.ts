@@ -16,7 +16,7 @@ const sql = neon(process.env.DATABASE_URL);
 const db = drizzle(sql);
 
 async function seed() {
-  console.log("🌱 Initiating database seed sequence...");
+  console.log("Bắt đầu");
 
   try {
     // Generate a secure bcrypt hash (Cost >= 12 per security constraint)
@@ -32,14 +32,11 @@ async function seed() {
       })
       .onConflictDoNothing({ target: users.username });
 
-    console.log("✅ Initial ADMIN account seeded successfully.");
-    console.log("➡️  Username: admin");
-    console.log("➡️  Password: admin123!");
+    console.log("Hoàn tất");
   } catch (error) {
-    console.error("❌ Seeding failed due to a fatal error:", error);
+    console.error(error);
     process.exit(1);
   } finally {
-    console.log("🛑 Terminating seeding process.");
     process.exit(0);
   }
 }

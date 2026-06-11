@@ -38,11 +38,6 @@ export async function sendVerificationEmail(email: string, otp: string) {
       html,
     });
   } else {
-    // Development fallback
-    console.log("========================================");
-    console.log(`[MOCK EMAIL] To: ${email}`);
-    console.log(`[MOCK EMAIL] Subject: Your Verification Code`);
     console.log(`[MOCK EMAIL] OTP: ${otp}`);
-    console.log("========================================");
   }
 }

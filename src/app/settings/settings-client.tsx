@@ -26,9 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 
-// ============================================================================
 // SCHEMAS
-// ============================================================================
 
 const passwordSchema = z
   .object({
@@ -49,9 +47,7 @@ type ThemeOption = {
   icon: React.ElementType;
 };
 
-// ============================================================================
 // COMPONENT
-// ============================================================================
 
 import { SessionsView } from "./sessions-view";
 

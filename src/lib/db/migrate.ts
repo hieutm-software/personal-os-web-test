@@ -7,9 +7,9 @@ config({ path: ".env.local" });
 const sql = neon(process.env.DATABASE_URL!);
 
 async function main() {
-  console.log("Running manual migrations...");
+  console.log("Bắt đầu");
   try {
-    // Attempt to create verification_tokens table
+
     await sql`
       CREATE TABLE IF NOT EXISTS "verification_tokens" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -19,12 +19,8 @@ async function main() {
         "created_at" timestamp with time zone DEFAULT now() NOT NULL
       );
     `;
-    console.log("verification_tokens table created.");
-
-    // Attempt to add email to users
     try {
       await sql`ALTER TABLE "users" ADD COLUMN "email" text;`;
-      console.log("Added email column to users.");
     } catch (e: unknown) {
       if (e instanceof Error && !e.message.includes("already exists")) {
         console.error(e);
@@ -33,16 +29,15 @@ async function main() {
 
     try {
       await sql`ALTER TABLE "users" ADD CONSTRAINT "users_email_unique" UNIQUE("email");`;
-      console.log("Added unique constraint on users email.");
     } catch (e: unknown) {
       if (e instanceof Error && !e.message.includes("already exists") && !e.message.includes("multiple null")) {
          console.error(e);
       }
     }
 
-    console.log("Migrations completed.");
+    console.log("Hoàn tất");
   } catch (err) {
-    console.error("Migration failed", err);
+    console.error(err);
   }
 }
 

@@ -2,9 +2,7 @@ import { verifySessionJWT } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// ============================================================================
 // CONSTANTS
-// ============================================================================
 
 const PUBLIC_ROUTES = new Set(["/", "/login", "/signup"]);
 const ADMIN_ROUTES = ["/settings/admin"];
@@ -19,9 +17,7 @@ const BYPASS_ROUTES = [
   "/icon-512x512.png"
 ];
 
-// ============================================================================
 // MIDDLEWARE LOGIC
-// ============================================================================
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -72,9 +68,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// ============================================================================
 // CONFIGURATION
-// ============================================================================
 
 export const config = {
   matcher: [

@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// ============================================================================
 // BaseModal — shared modal wrapper for form dialogs across Tasks, Calendar, etc.
 //
 // Usage (controlled):
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils";
 //   <BaseModal title="Create Task" trigger={<Button>Open</Button>} onSubmit={handleSubmit}>
 //     <Input ... />
 //   </BaseModal>
-// ============================================================================
 
 interface BaseModalProps {
   /** Dialog title displayed in the header. */

@@ -57,9 +57,7 @@ async function deleteStorageFile(url: string): Promise<void> {
   }
 }
 
-// ============================================================================
 // UPLOAD ACTIONS
-// ============================================================================
 
 export const getUploadUrlAction = actionClient
   .schema(z.object({
@@ -147,9 +145,7 @@ export const finalizeUploadAction = actionClient
     }
   });
 
-// ============================================================================
 // DOCUMENT CRUD ACTIONS
-// ============================================================================
 
 export const deleteDocumentAction = actionClient
   .schema(z.object({ id: z.string() }))
@@ -272,9 +268,7 @@ export const updateDocumentContentAction = actionClient
     }
   });
 
-// ============================================================================
 // FOLDER CRUD ACTIONS
-// ============================================================================
 
 export const createFolderAction = actionClient
   .schema(z.object({
@@ -339,9 +333,7 @@ export const deleteFolderAction = actionClient
     }
   });
 
-// ============================================================================
 // RESTORE ACTIONS
-// ============================================================================
 
 export const restoreDocumentsAction = actionClient
   .schema(z.object({ ids: z.array(z.string().uuid()) }))
@@ -379,9 +371,7 @@ export const restoreFoldersAction = actionClient
     }
   });
 
-// ============================================================================
 // PERMANENT DELETE ACTIONS
-// ============================================================================
 
 export const permanentlyDeleteDocumentsAction = actionClient
   .schema(z.object({ ids: z.array(z.string().uuid()) }))
